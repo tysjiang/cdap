@@ -27,7 +27,7 @@ import T from 'i18n-react';
 import StreamDetaildViewTab from 'components/StreamDetailedView/Tabs';
 import FastActionToMessage from 'services/fast-action-message-helper';
 import capitalize from 'lodash/capitalize';
-import Redirect from 'react-router/Redirect';
+import {Redirect} from 'react-router-dom';
 import Page404 from 'components/404';
 import BreadCrumb from 'components/BreadCrumb';
 import ResourceCenterButton from 'components/ResourceCenterButton';
@@ -54,7 +54,7 @@ export default class StreamDetailedView extends Component {
   }
 
   componentWillMount() {
-    let {namespace, streamId} = this.props.params;
+    let {namespace, streamId} = this.props.match.params;
     let selectedNamespace = NamespaceStore.getState().selectedNamespace;
     let previousPathName = objectQuery(this.props, 'location', 'state', 'previousPathname')  || `/ns/${selectedNamespace}?overviewid=${streamId}&overviewtype=stream`;
     if (!namespace) {
@@ -77,12 +77,12 @@ export default class StreamDetailedView extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    let {namespace: currentNamespace, streamId: currentStreamId} = this.props.params;
-    let {namespace: nextNamespace, streamId: nextStreamId} = nextProps.params;
+    let {namespace: currentNamespace, streamId: currentStreamId} = this.props.match.params;
+    let {namespace: nextNamespace, streamId: nextStreamId} = nextProps.match.params;
     if (currentNamespace === nextNamespace && currentStreamId === nextStreamId) {
       return;
     }
-    let {namespace, streamId} = nextProps.params;
+    let {namespace, streamId} = nextProps.match.params;
     if (!namespace) {
       namespace = NamespaceStore.getState().selectedNamespace;
     }
@@ -198,7 +198,7 @@ export default class StreamDetailedView extends Component {
       return (
         <Page404
           entityType="stream"
-          entityName={this.props.params.streamId}
+          entityName={this.props.match.params.streamId}
         />
       );
     }
@@ -209,7 +209,7 @@ export default class StreamDetailedView extends Component {
     return (
       <div className="app-detailed-view streams-deatiled-view">
         <Helmet
-          title={T.translate('features.StreamDetailedView.Title', {streamId: this.props.params.streamId})}
+          title={T.translate('features.StreamDetailedView.Title', {streamId: this.props.match.params.streamId})}
         />
         <ResourceCenterButton />
         <BreadCrumb
@@ -225,7 +225,7 @@ export default class StreamDetailedView extends Component {
           showFullCreationTime={true}
         />
         <StreamDetaildViewTab
-          params={this.props.params}
+          params={this.props.match.params}
           pathname={this.props.location.pathname}
           entity={this.state.entityDetail}
         />
@@ -241,9 +241,14 @@ export default class StreamDetailedView extends Component {
 }
 
 StreamDetailedView.propTypes = {
-  params: PropTypes.shape({
-    streamId: PropTypes.string,
-    namespace: PropTypes.string
-  }),
-  location: PropTypes.any
+  match: PropTypes.object,
+  location: PropTypes.object,
+};
+
+StreamDetailedView.contextTypes = {
+  router: PropTypes.shape({
+     history: PropTypes.object.isRequired,
+     route: PropTypes.object.isRequired,
+     staticContext: PropTypes.object
+   })
 };

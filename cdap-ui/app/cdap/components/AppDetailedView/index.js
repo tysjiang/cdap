@@ -26,7 +26,7 @@ import NamespaceStore from 'services/NamespaceStore';
 import BreadCrumb from 'components/BreadCrumb';
 import AppDetailedViewTab from 'components/AppDetailedView/Tabs';
 import shortid from 'shortid';
-import Redirect from 'react-router/Redirect';
+import {Redirect} from 'react-router-dom';
 import FastActionToMessage from 'services/fast-action-message-helper';
 import capitalize from 'lodash/capitalize';
 import Page404 from 'components/404';
@@ -40,7 +40,7 @@ export default class AppDetailedView extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      entityDetail: objectQuery(this.props, 'location', 'state', 'entityDetail') || {
+      entityDetail: objectQuery(this.props.location, 'state', 'entityDetail') || {
         programs: [],
         datasets: [],
         streams: [],
@@ -57,7 +57,7 @@ export default class AppDetailedView extends Component {
   componentWillMount() {
     let selectedNamespace = NamespaceStore.getState().selectedNamespace;
     let {namespace, appId} = this.props.params;
-    let previousPathName = objectQuery(this.props, 'location', 'state', 'previousPathname') ||
+    let previousPathName = objectQuery(this.props.location, 'state', 'previousPathname') ||
       `/ns/${selectedNamespace}?overviewid=${appId}&overviewtype=application`;
     if (!namespace) {
       namespace = NamespaceStore.getState().selectedNamespace;
@@ -238,7 +238,6 @@ const entityDetailType = PropTypes.shape({
   programs: PropTypes.arrayOf(PropTypes.object),
   name: PropTypes.string
 });
-
 
 AppDetailedView.propTypes = {
   entity: PropTypes.object,
