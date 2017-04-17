@@ -156,12 +156,12 @@
       "./app/cdap/"
     ],
     "moduleNameMapper": {
+      ".scss$": "<rootDir>/__mocks__/styleMocks.js",
       "^components": "<rootDir>/components",
       "^services": "<rootDir>/services",
       "^api": "<rootDir>/api",
       "^lib": "<rootDir>/../lib",
-      "^mocks": "<rootDir>/__mocks__",
-      "^.+\\.scss$": "<rootDir>/__mocks__/styleMocks.js"
+      "^mocks": "<rootDir>/__mocks__"
     }
   }
 }
