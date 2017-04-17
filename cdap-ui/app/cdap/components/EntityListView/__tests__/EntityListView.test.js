@@ -33,7 +33,14 @@ jest.mock('api/preference');
 jest.mock('api/pipeline');
 jest.mock('api/namespace');
 jest.mock('api/metadata');
-
+jest.mock('reactstrap', () => {
+  const RealModule = require.requireActual('reactstrap');
+  const MyModule = Object.assign({}, RealModule, { 'Tooltip': 'Tooltip'});
+  return MyModule;
+});
+console.warn = jest.genMockFunction();
+console.trace = jest.genMockFunction();
+console.error = jest.genMockFunction();
 jest.useFakeTimers();
 
 import MyStoreApi from 'api/userstore';
@@ -43,8 +50,6 @@ import NamespaceActions from 'services/NamespaceStore/NamespaceActions';
 import EntityListView from 'components/EntityListView';
 
 describe('Unit tests for EntityListView', () => {
-  beforeEach(() => {
-  });
   it('Should render', () => {
     let listview = shallow(
       <EntityListView />
@@ -58,20 +63,22 @@ describe('Unit tests for EntityListView', () => {
         'user-has-visited': true
       }
     });
-    let listview = shallow(
-      <EntityListView />
+    MySearchApi.__setSearchResults({
+      total: 0,
+      limit: 30,
+      results: []
+    });
+    let listview = mount(
+      <MemoryRouter initialEntries={['/ns/default']}>
+        <Route exact path="/ns/:namespace" component={EntityListView} />
+      </MemoryRouter>
     );
     jest.runAllTimers();
     let entitylistview = listview.find('.entity-list-view');
     let entitiescontainer = entitylistview.find('.entities-container');
     let homelistviewcontainer = entitiescontainer.find('.home-list-view-container');
-    let entitiesallcontainer = homelistviewcontainer
-      .dive() // escape hatch for not doing a full DOM rendering.
-      .find('.entities-all-list-container');
-    let emptyviewcontainer = entitiesallcontainer
-      .children()
-      .dive()
-      .find('.empty-message-container');
+    let entitiesallcontainer = homelistviewcontainer.find('.entities-all-list-container');
+    let emptyviewcontainer = entitiesallcontainer.find('.empty-message-container');
     expect(entitylistview.length).toBe(1);
     expect(entitiescontainer.length).toBe(1);
     expect(homelistviewcontainer.length).toBe(1);
@@ -83,9 +90,7 @@ describe('Unit tests for EntityListView', () => {
         .text()
     ).toBe('features.EntityListView.emptyMessage.default');
     expect(
-      shallow(
-        emptyviewcontainer.find('.empty-message-suggestions > span').nodes[0]
-      ).text()
+      emptyviewcontainer.find('.empty-message-suggestions > span').at(0).text()
     ).toBe('features.EntityListView.emptyMessage.suggestion');
     listview.unmount();
   });
@@ -185,5 +190,50 @@ describe('Unit tests for EntityListView', () => {
     expect(timercountdown.text()).toBe("599");
     runTimer(599);
     expect(errormessage.find('span').nodes[1].textContent).toBe('features.EntityListView.Errors.timeOut');
+  });
+  it('Should render entities', () => {
+    MyStoreApi.__setUserStore({
+      property: {
+        'user-has-visited': true
+      }
+    });
+    MySearchApi.__setSearchResults({
+      total: 1,
+      limit: 30,
+      results: [
+        {
+          "entityId": {
+            "type": "application",
+            "id": {
+              "namespace": {
+                "id": "default"
+              },
+              "applicationId": "dataprep"
+            }
+          },
+          "metadata": {
+            "SYSTEM": {
+              "properties": {
+                "description": "DataPrep Backend Service",
+                "Service:service": "service",
+                "creation-time": "1492442466579",
+                "version": "-SNAPSHOT",
+                "entity-name": "dataprep"
+              },
+              "tags": [
+                "wrangler-service"
+              ]
+            }
+          }
+        }
+      ]
+    });
+    let listview = mount(
+      <MemoryRouter initialEntries={['/ns/default']}>
+        <Route exact path="/ns/:namespace" component={EntityListView} />
+      </MemoryRouter>
+    );
+    jest.runOnlyPendingTimers();
+    expect(listview.find('.entity-cards').length).toBe(1);
   });
 });
