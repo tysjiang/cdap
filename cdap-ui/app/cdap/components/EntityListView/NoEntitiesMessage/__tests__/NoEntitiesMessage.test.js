@@ -24,7 +24,7 @@ const filterEmptyMessagePath = 'features.EntityListView.emptyMessage.filter';
 const searchEmptyMessagePath = 'features.EntityListView.emptyMessage.search';
 let noEntitiesMessage;
 
-let filtersAreApplied = jest.fn();
+let filtersAreApplied;
 
 describe('NoEntitiesMessage Unit tests - ', () => {
   beforeEach(() => {

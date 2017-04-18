@@ -28,7 +28,7 @@ MyAppApi.__setApp = function(app) {
 MyAppApi.get = function() {
   let subject = new Rx.Subject();
   setTimeout(() => {
-    return this.__app;
+    return subject.onNext(this.__app);
   });
   return subject;
 };
@@ -41,19 +41,3 @@ MyAppApi.batchStatus = function() {
   return subject;
 };
 export {MyAppApi};
-
-// const list = () => {};
-// const get = () => {};
-// const getVersions = () => {};
-// const getDeployedApp = () => {};
-// const batchStatus = () => {};
-// const _delete = () => {};
-//
-// export default {
-//   list,
-//   get,
-//   getVersions,
-//   getDeployedApp,
-//   batchStatus,
-//   'delete': _delete
-// };
