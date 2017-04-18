@@ -28,7 +28,7 @@ MyAppApi.__setApp = function(app) {
 MyAppApi.get = function() {
   let subject = new Rx.Subject();
   setTimeout(() => {
-    return subject.onNext(this.__app);
+    subject.onNext(this.__app);
   });
   return subject;
 };
@@ -36,7 +36,7 @@ MyAppApi.get = function() {
 MyAppApi.batchStatus = function() {
   let subject = new Rx.Subject();
   setTimeout(() => {
-    return this.__batchStatusStats;
+    subject.onNext(this.__batchStatusStats);
   });
   return subject;
 };
