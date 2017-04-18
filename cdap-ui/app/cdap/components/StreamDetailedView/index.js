@@ -246,11 +246,3 @@ StreamDetailedView.propTypes = {
   match: PropTypes.object,
   location: PropTypes.object
 };
-
-StreamDetailedView.contextTypes = {
-  router: PropTypes.shape({
-     history: PropTypes.object.isRequired,
-     route: PropTypes.object.isRequired,
-     staticContext: PropTypes.object
-   })
-};
