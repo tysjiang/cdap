@@ -15,15 +15,33 @@
 */
 import Rx from 'rx';
 const MyDatasetApi = {
-  __list: []
+  __list: [],
+  __programs: [],
+  isError: false
 };
 
-MyDatasetApi.list = function() {
-  let subject = new Rx.Subject();
-  setTimeout(() => {
-    subject.onNext(this.__list);
-  });
-  return subject;
+MyDatasetApi.generalGetter = function(property) {
+  return function() {
+    let subject = new Rx.Subject();
+    setTimeout(() => {
+      if (this.__isError) {
+        subject.onError(this[property]);
+        return;
+      }
+      subject.onNext(this[property]);
+    });
+    return subject;
+  }.bind(this);
 };
 
+MyDatasetApi.list = MyDatasetApi.generalGetter('__list');
+MyDatasetApi.__setList = function(list, isError) {
+  this.__isError = isError;
+  this.__list = list;
+};
+MyDatasetApi.getPrograms = MyDatasetApi.generalGetter('__programs');
+MyDatasetApi.__setPrograms = function(programs, isError) {
+  this.__isError = isError;
+  this.__programs = programs;
+};
 export {MyDatasetApi};
