@@ -55,14 +55,15 @@ export default class AppOverview extends Component {
       loading: true
     });
     let namespace = NamespaceStore.getState().selectedNamespace;
+    let entityId = objectQuery(this.props, 'entity', 'id');
     const metadataParams = {
       namespace,
       entityType: 'apps',
-      entityId: this.props.entity.id,
+      entityId,
       scope: 'SYSTEM'
     };
 
-    if (objectQuery(this.props, 'entity', 'id')) {
+    if (entityId) {
       MyMetadataApi
         .getProperties(metadataParams)
         .combineLatest(
