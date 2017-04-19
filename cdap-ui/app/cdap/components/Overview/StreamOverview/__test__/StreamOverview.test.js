@@ -37,67 +37,69 @@
    return MyModule;
  });
 
-import AppOverview from 'components/Overview/AppOverview';
+import StreamOverview from 'components/Overview/StreamOverview';
 import {MyMetadataApi} from 'api/metadata';
-import {MyAppApi} from 'api/app';
+import {MyStreamApi} from 'api/stream';
 import OverviewHeader from 'components/Overview/OverviewHeader';
 import OverviewMetaSection from 'components/Overview/OverviewMetaSection';
-import AppOverviewTab from 'components/Overview/AppOverview/AppOverviewTab';
+import StreamOverviewTab from 'components/Overview/StreamOverview/StreamOverviewTab';
 jest.useFakeTimers();
 
 
-describe('Unit test for AppOverview', () => {
+describe('Unit test for StreamOverview', () => {
   it('Should render', () => {
-    let appoverview = shallow(
-      <AppOverview />
+    let streamoverview = shallow(
+      <StreamOverview />
     );
-    expect(appoverview.find('.fa.fa-spinner').length).toBe(1);
+    expect(streamoverview.find('.fa.fa-spinner').length).toBe(1);
   });
   it('Should render the entity if provided', () => {
     MyMetadataApi.__setProperties({});
-    MyAppApi.__setApp({
-      programs: [{name: 'program1'}],
-      streams: [{name: 'stream1'}],
-      datasets: [{name: 'dataset1'}]
-    });
+    MyStreamApi.__setPrograms([{
+      id: 'program1',
+      application: {
+        applicationId: 'MyApp1'
+      }
+    }]);
     let entity = {
       id: 'MyApp1'
     };
-    let appoverview = shallow(
-      <AppOverview entity={entity}/>
+    let streamoverview = shallow(
+      <StreamOverview entity={entity}/>
     );
     jest.runAllTimers();
-    let {entityDetail} = appoverview.state();
+    let {entityDetail} = streamoverview.state();
     expect(entityDetail.id).toBe(entity.id);
-    expect(appoverview.find('.app-overview').length).toBe(1);
-    expect(appoverview.find(OverviewHeader).length).toBe(1);
-    expect(appoverview.find(OverviewHeader).props().title).toBe('commons.entity.application.singular');
-    expect(appoverview.find(OverviewMetaSection).length).toBe(1);
-    expect(appoverview.find(AppOverviewTab).length).toBe(1);
+    expect(streamoverview.find('.app-overview').length).toBe(1);
+    expect(streamoverview.find(OverviewHeader).length).toBe(1);
+    expect(streamoverview.find(OverviewHeader).props().title).toBe('commons.entity.stream.singular');
+    expect(streamoverview.find(OverviewMetaSection).length).toBe(1);
+    expect(streamoverview.find(StreamOverviewTab).length).toBe(1);
   });
   it('Should update on new entity', () => {
     MyMetadataApi.__setProperties({});
-    MyAppApi.__setApp({
-      programs: [{name: 'program1'}],
-      streams: [{name: 'stream1'}],
-      datasets: [{name: 'dataset1'}]
-    });
+    MyStreamApi.__setPrograms([{
+      id: 'program1',
+      application: {
+        applicationId: 'MyApp1'
+      }
+    }]);
     let entity = {
-      id: 'MyApp1'
+      id: 'MyStream1'
     };
-    let appoverview = shallow(
-      <AppOverview entity={entity}/>
+    let streamoverview = shallow(
+      <StreamOverview entity={entity}/>
     );
     jest.runAllTimers();
-    let {entityDetail} = appoverview.state();
+    let {entityDetail} = streamoverview.state();
     expect(entityDetail.id).toBe(entity.id);
-    appoverview.setProps({
+    streamoverview.setProps({
       entity: {
-        id: 'MyApp2'
+        id: 'MyStream2'
       }
     });
     jest.runAllTimers();
-    entityDetail = appoverview.state().entityDetail;
-    expect(entityDetail.id).toBe('MyApp2');
+    entityDetail = streamoverview.state().entityDetail;
+    expect(entityDetail.id).toBe('MyStream2');
   });
 });
