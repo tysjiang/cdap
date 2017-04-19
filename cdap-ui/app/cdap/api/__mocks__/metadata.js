@@ -26,10 +26,16 @@ const MyMetadataApi = {
 };
 
 
-MyMetadataApi.setMetadata = function(metadata, isError) {
+MyMetadataApi.__setMetadata = function(metadata, isError) {
   this.__isError = isError;
   this.__metadata = metadata;
 };
+
+MyMetadataApi.__setProperties = function(properties, isError) {
+  this.__isError = isError;
+  this.__properties = properties;
+};
+
 
 MyMetadataApi.generalGetter = function(property) {
   return function() {

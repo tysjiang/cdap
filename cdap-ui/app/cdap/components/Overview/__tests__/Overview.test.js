@@ -70,7 +70,7 @@ describe('Unit tests for Overview component', () => {
     let overview = shallow(
       <Overview />
     );
-    MyMetadataApi.setMetadata({});
+    MyMetadataApi.__setMetadata({});
     SearchStore.dispatch({
       type: SearchStoreActions.SETOVERVIEWENTITY,
       payload: {
@@ -93,7 +93,7 @@ describe('Unit tests for Overview component', () => {
     let overview = shallow(
       <Overview />
     );
-    MyMetadataApi.setMetadata({});
+    MyMetadataApi.__setMetadata({});
     SearchStore.dispatch({
       type: SearchStoreActions.SETOVERVIEWENTITY,
       payload: {
@@ -116,7 +116,7 @@ describe('Unit tests for Overview component', () => {
     let overview = shallow(
       <Overview />
     );
-    MyMetadataApi.setMetadata({});
+    MyMetadataApi.__setMetadata({});
     SearchStore.dispatch({
       type: SearchStoreActions.SETOVERVIEWENTITY,
       payload: {
@@ -148,7 +148,7 @@ describe('Unit tests for Overview component', () => {
         }
       }
     });
-    MyMetadataApi.setMetadata({
+    MyMetadataApi.__setMetadata({
       statusCode: 404
     }, true);
     jest.runAllTimers();
@@ -172,7 +172,7 @@ describe('Unit tests for Overview component', () => {
         }
       }
     });
-    MyMetadataApi.setMetadata({
+    MyMetadataApi.__setMetadata({
       statusCode: 403
     }, true);
     jest.runAllTimers();
