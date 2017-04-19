@@ -23,6 +23,7 @@ MySearchApi.search = function () {
   setTimeout(() => {
     if (this.__isError) {
       subject.onError(this.__searchResults);
+      return;
     }
     subject.onNext(this.__searchResults);
   });

@@ -18,20 +18,38 @@
   TODO: This is just a stub(mock) for jest to not invoke the actual socket connection.
   This needs to be exported as a singleton class. Will do when we actually need to mock a function.
 */
-const getMetadata = () => {};
-const getProperties = () => {};
-const addProperties = () => {};
-const deleteProperty = () => {};
-const getTags = () => {};
-const addTags = () => {};
-const deleteTags = () => {};
+import Rx from 'rx';
 
-export default {
-  getMetadata,
-  getProperties,
-  addProperties,
-  deleteProperty,
-  getTags,
-  addTags,
-  deleteTags
+const MyMetadataApi = {
+  __metadata: {},
+  __properties: {}
 };
+
+
+MyMetadataApi.setMetadata = function(metadata, isError) {
+  this.__isError = isError;
+  this.__metadata = metadata;
+};
+
+MyMetadataApi.generalGetter = function(property) {
+  return function() {
+    let subject = new Rx.Subject();
+    setTimeout(() => {
+      if (this.__isError) {
+        subject.onError(this[property]);
+        return;
+      }
+      subject.onNext(this[property]);
+    });
+    return subject;
+  }.bind(this);
+};
+MyMetadataApi.resetState = function() {
+  this.__metadata = {};
+  this.__properties = {};
+  this.__isError = false;
+};
+MyMetadataApi.getProperties = MyMetadataApi.generalGetter('__properties');
+MyMetadataApi.getMetadata = MyMetadataApi.generalGetter('__metadata');
+
+module.exports = {MyMetadataApi};
