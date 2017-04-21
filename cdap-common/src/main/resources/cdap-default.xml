@@ -938,6 +938,13 @@
     </description>
   </property>
 
+  <property>
+    <name>hive.latest.version.for.unknown.version</name>
+    <value>false</value>
+    <description>
+      Whether to use latest hive version when hive version is unknown; defaults to false
+    </description>
+  </property>
 
   <!-- Gateway Configuration -->
 
@@ -1355,6 +1362,14 @@
     <value>15000</value>
     <description>
       RPC timeout from HBase operations performed from master services
+    </description>
+  </property>
+
+  <property>
+    <name>hbase.latest.version.for.unknown.version</name>
+    <value>false</value>
+    <description>
+      Whether to use latest hbase version when hive version is unknown; defaults to false
     </description>
   </property>
 

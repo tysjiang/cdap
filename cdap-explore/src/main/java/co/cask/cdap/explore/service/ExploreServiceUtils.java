@@ -16,6 +16,7 @@
 
 package co.cask.cdap.explore.service;
 
+import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.explore.service.hive.Hive12CDH5ExploreService;
 import co.cask.cdap.explore.service.hive.Hive12ExploreService;
@@ -81,10 +82,16 @@ public class ExploreServiceUtils {
     HIVE_14(null, Hive14ExploreService.class),
     HIVE_1_0(null, Hive14ExploreService.class),
     HIVE_1_1(null, Hive14ExploreService.class),
-    HIVE_1_2(null, Hive14ExploreService.class);
+    HIVE_1_2(null, Hive14ExploreService.class),
+    LATEST(HIVE_1_2); // Current latest version is HIVE_1_2. Need to update LATEST newer version is added.
 
     private final Pattern hadoopVersionPattern;
     private final Class<? extends ExploreService> hiveExploreServiceClass;
+
+    HiveSupport(HiveSupport hiveSupport) {
+      this.hadoopVersionPattern = hiveSupport.getHadoopVersionPattern();
+      this.hiveExploreServiceClass = hiveSupport.getHiveExploreServiceClass();
+    }
 
     HiveSupport(Pattern hadoopVersionPattern, Class<? extends ExploreService> hiveExploreServiceClass) {
       this.hadoopVersionPattern = hadoopVersionPattern;
@@ -100,14 +107,14 @@ public class ExploreServiceUtils {
     }
   }
 
-  public static Class<? extends ExploreService> getHiveService() {
-    HiveSupport hiveVersion = checkHiveSupport(null);
+  public static Class<? extends ExploreService> getHiveService(CConfiguration cConf) {
+    HiveSupport hiveVersion = checkHiveSupport(cConf, null);
     return hiveVersion.getHiveExploreServiceClass();
   }
 
-  static boolean shouldEscapeColumns(Configuration hConf) {
+  static boolean shouldEscapeColumns(CConfiguration cConf, Configuration hConf) {
     // backtick support was added in Hive13.
-    ExploreServiceUtils.HiveSupport hiveSupport = checkHiveSupport(hConf.getClassLoader());
+    ExploreServiceUtils.HiveSupport hiveSupport = checkHiveSupport(cConf, hConf.getClassLoader());
     if (hiveSupport == HiveSupport.HIVE_12
       || hiveSupport == HiveSupport.HIVE_CDH5_0
       || hiveSupport == HiveSupport.HIVE_CDH5_1) {
@@ -123,8 +130,8 @@ public class ExploreServiceUtils {
     return "column".equalsIgnoreCase(hConf.get("hive.support.quoted.identifiers", "column"));
   }
 
-  public static HiveSupport checkHiveSupport() {
-    return checkHiveSupport(ExploreUtils.getExploreClassloader());
+  public static HiveSupport checkHiveSupport(CConfiguration cConf) {
+    return checkHiveSupport(cConf, ExploreUtils.getExploreClassloader());
   }
 
   public static String getHiveVersion() {
@@ -144,7 +151,7 @@ public class ExploreServiceUtils {
   /**
    * Check that Hive is in the class path - with a right version.
    */
-  public static HiveSupport checkHiveSupport(@Nullable ClassLoader hiveClassLoader) {
+  public static HiveSupport checkHiveSupport(@Nullable CConfiguration cConf, @Nullable ClassLoader hiveClassLoader) {
     // First try to figure which hive support is relevant based on Hadoop distribution name
     String hadoopVersion = VersionInfo.getVersion();
     for (HiveSupport hiveSupport : HiveSupport.values()) {
@@ -166,6 +173,11 @@ public class ExploreServiceUtils {
       return HiveSupport.HIVE_1_1;
     }  else if (hiveVersion.startsWith(("1.2"))) {
       return HiveSupport.HIVE_1_2;
+    }
+
+    if (cConf != null && cConf.getBoolean(Constants.Explore.HIVE_LATEST_VERSION_FOR_UNKNOWN_VERSION)) {
+      LOG.info("Hive version '{}' is unknown. Using the latest Hive version available in CDAP. ", hiveVersion);
+      return HiveSupport.LATEST;
     }
 
     throw new RuntimeException("Hive distribution not supported. Set the configuration '" +

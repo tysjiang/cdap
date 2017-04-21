@@ -16,6 +16,7 @@
 
 package co.cask.cdap.data.hbase;
 
+import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.data2.util.hbase.HBaseVersionSpecificFactory;
 
 /**
@@ -56,5 +57,10 @@ public class HBaseTestFactory extends HBaseVersionSpecificFactory<HBaseTestBase>
   @Override
   protected String getHBase12CHD570ClassName() {
     return "co.cask.cdap.data.hbase.HBase12CDH570Test";
+  }
+
+  @Override
+  protected CConfiguration getCConfiguration() {
+    return null;
   }
 }

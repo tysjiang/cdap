@@ -16,9 +16,13 @@
 
 package co.cask.cdap.data2.util.hbase;
 
+import co.cask.cdap.common.conf.CConfiguration;
+import co.cask.cdap.common.conf.Constants;
 import com.google.inject.Provider;
 import com.google.inject.ProvisionException;
 import org.apache.twill.internal.utils.Instances;
+
+import javax.annotation.Nullable;
 
 /**
  * Common class factory behavior for classes which need specific implementations depending on HBase versions.
@@ -57,7 +61,13 @@ public abstract class HBaseVersionSpecificFactory<T> implements Provider<T> {
           instance = createInstance(getHBase12CHD570ClassName());
           break;
         case UNKNOWN:
-          throw new ProvisionException("Unknown HBase version: " + HBaseVersion.getVersionString());
+          CConfiguration cConf = getCConfiguration();
+          if (cConf != null && cConf.getBoolean(Constants.HBase.HBASE_LATEST_VERSION_FOR_UNKNOWN_VERSION)) {
+            instance = createInstance(getLatestHBaseClassName());
+            break;
+          } else {
+            throw new ProvisionException("Unknown HBase version: " + HBaseVersion.getVersionString());
+          }
       }
     } catch (ClassNotFoundException cnfe) {
       throw new ProvisionException(cnfe.getMessage(), cnfe);
@@ -78,4 +88,13 @@ public abstract class HBaseVersionSpecificFactory<T> implements Provider<T> {
   protected abstract String getHBase11Classname();
   protected abstract String getHBase10CHD550ClassName();
   protected abstract String getHBase12CHD570ClassName();
+
+  /**
+   * Return the latest HBase class name. Must be updated when adding new HBase version.
+   */
+  String getLatestHBaseClassName() {
+    return getHBase12CHD570ClassName();
+  }
+  @Nullable
+  protected abstract CConfiguration getCConfiguration();
 }

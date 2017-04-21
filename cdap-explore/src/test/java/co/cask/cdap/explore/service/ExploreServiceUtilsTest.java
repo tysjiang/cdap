@@ -46,7 +46,7 @@ public class ExploreServiceUtilsTest {
   @Test
   public void testHiveVersion() throws Exception {
     // This would throw an exception if it didn't pass
-    ExploreServiceUtils.checkHiveSupport(getClass().getClassLoader());
+    ExploreServiceUtils.checkHiveSupport(null, getClass().getClassLoader());
   }
 
   @Test
