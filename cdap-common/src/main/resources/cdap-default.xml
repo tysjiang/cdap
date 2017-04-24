@@ -939,10 +939,11 @@
   </property>
 
   <property>
-    <name>hive.latest.version.for.unknown.version</name>
-    <value>false</value>
+    <name>hive.version</name>
+    <value>auto.exact</value>
     <description>
-      Whether to use latest hive version when hive version is unknown; defaults to false
+      Whether to use latest hive version when hive version is unknown; defaults to "auto.exact" to keep unknown version
+      as unknown. Set value to "auto.latest" to use latest hive version for unknown version.
     </description>
   </property>
 
@@ -1366,10 +1367,11 @@
   </property>
 
   <property>
-    <name>hbase.latest.version.for.unknown.version</name>
-    <value>false</value>
+    <name>hbase.version</name>
+    <value>auto.exact</value>
     <description>
-      Whether to use latest hbase version when hive version is unknown; defaults to false
+      Whether to use latest HBase version when hive version is unknown; defaults to "auto.exact" to keep unknown version
+      as unknown. Set value to "auto.latest" to use latest HBase version for unknown version.
     </description>
   </property>
 

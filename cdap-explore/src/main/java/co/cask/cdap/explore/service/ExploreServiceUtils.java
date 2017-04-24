@@ -151,7 +151,7 @@ public class ExploreServiceUtils {
   /**
    * Check that Hive is in the class path - with a right version.
    */
-  public static HiveSupport checkHiveSupport(@Nullable CConfiguration cConf, @Nullable ClassLoader hiveClassLoader) {
+  public static HiveSupport checkHiveSupport(CConfiguration cConf, @Nullable ClassLoader hiveClassLoader) {
     // First try to figure which hive support is relevant based on Hadoop distribution name
     String hadoopVersion = VersionInfo.getVersion();
     for (HiveSupport hiveSupport : HiveSupport.values()) {
@@ -175,7 +175,9 @@ public class ExploreServiceUtils {
       return HiveSupport.HIVE_1_2;
     }
 
-    if (cConf != null && cConf.getBoolean(Constants.Explore.HIVE_LATEST_VERSION_FOR_UNKNOWN_VERSION)) {
+    if (cConf != null
+      && cConf.get(Constants.Explore.HIVE_AUTO_LATEST_VERSION).equals(
+      cConf.get(Constants.Explore.HIVE_VERSION_FOR_UNKNOWN_VERSION))) {
       LOG.info("Hive version '{}' is unknown. Using the latest Hive version available in CDAP. ", hiveVersion);
       return HiveSupport.LATEST;
     }

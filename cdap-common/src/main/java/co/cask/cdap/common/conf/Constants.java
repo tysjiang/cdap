@@ -123,8 +123,10 @@ public final class Constants {
     public static final String MANAGE_COPROCESSORS = "master.manage.hbase.coprocessors";
     public static final String CLIENT_RETRIES = "hbase.client.retries.number";
     public static final String RPC_TIMEOUT = "hbase.rpc.timeout";
-    /** Whether to use latest hbase version when hive version is unknown */
-    public static final String HBASE_LATEST_VERSION_FOR_UNKNOWN_VERSION = "hbase.latest.version.for.unknown.version";
+    /** Whether to use latest HBase version when HBase version is unknown */
+    public static final String HBASE_VERSION_FOR_UNKNOWN_VERSION = "hbase.version";
+    public static final String HBASE_AUTO_EXACT_VERSION = "auto.exact";
+    public static final String HBASE_AUTO_LATEST_VERSION = "auto.latest";
   }
 
   /**
@@ -985,7 +987,9 @@ public final class Constants {
       "hive.security.authorization.sqlstd.confwhitelist.append";
 
     /** Whether to use latest hive version when hive version is unknown */
-    public static final String HIVE_LATEST_VERSION_FOR_UNKNOWN_VERSION = "hive.latest.version.for.unknown.version";
+    public static final String HIVE_VERSION_FOR_UNKNOWN_VERSION = "hive.version";
+    public static final String HIVE_AUTO_EXACT_VERSION = "auto.exact";
+    public static final String HIVE_AUTO_LATEST_VERSION = "auto.latest";
 
     // a marker so that we know which tables are created by CDAP
     public static final String CDAP_NAME = "cdap.name";

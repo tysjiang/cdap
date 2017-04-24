@@ -62,7 +62,9 @@ public abstract class HBaseVersionSpecificFactory<T> implements Provider<T> {
           break;
         case UNKNOWN:
           CConfiguration cConf = getCConfiguration();
-          if (cConf != null && cConf.getBoolean(Constants.HBase.HBASE_LATEST_VERSION_FOR_UNKNOWN_VERSION)) {
+          if (cConf != null
+            && cConf.get(Constants.HBase.HBASE_AUTO_LATEST_VERSION).equals(
+              cConf.get(Constants.HBase.HBASE_VERSION_FOR_UNKNOWN_VERSION))) {
             instance = createInstance(getLatestHBaseClassName());
             break;
           } else {
