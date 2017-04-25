@@ -22,7 +22,8 @@ import Rx from 'rx';
 
 const MyMetadataApi = {
   __metadata: {},
-  __properties: {}
+  __properties: {},
+  __tags: []
 };
 
 
@@ -34,6 +35,10 @@ MyMetadataApi.__setMetadata = function(metadata, isError) {
 MyMetadataApi.__setProperties = function(properties, isError) {
   this.__isError = isError;
   this.__properties = properties;
+};
+MyMetadataApi.__setTags = function(tags, isError) {
+  this.__isError = isError;
+  this.__tags = tags;
 };
 
 
@@ -57,5 +62,6 @@ MyMetadataApi.resetState = function() {
 };
 MyMetadataApi.getProperties = MyMetadataApi.generalGetter('__properties');
 MyMetadataApi.getMetadata = MyMetadataApi.generalGetter('__metadata');
+MyMetadataApi.getTags = MyMetadataApi.generalGetter('__tags');
 
 module.exports = {MyMetadataApi};

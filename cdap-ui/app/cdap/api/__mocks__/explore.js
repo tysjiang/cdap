@@ -30,5 +30,12 @@ MyExploreApi.fetchTables = function() {
   });
   return subject;
 };
+MyExploreApi.fetchQueries = function() {
+  let subject = new Rx.Subject();
+  setTimeout(() => {
+    subject.onNext(this.queries);
+  });
+  return subject;
+};
 
 export default MyExploreApi;
