@@ -60,10 +60,18 @@ public abstract class HBaseVersionSpecificFactory<T> implements Provider<T> {
         case HBASE_12_CDH57:
           instance = createInstance(getHBase12CHD570ClassName());
           break;
-        case UNKNOWN:
+        case UNKNOWN_CDH:
           CConfiguration cConf = getCConfiguration();
-          if (cConf != null
-            && cConf.get(Constants.HBase.HBASE_AUTO_LATEST_VERSION).equals(
+          if (cConf.get(Constants.HBase.HBASE_AUTO_LATEST_VERSION).equals(
+            cConf.get(Constants.HBase.HBASE_VERSION_FOR_UNKNOWN_VERSION))) {
+            instance = createInstance(getLatestHBaseCDHClassName());
+            break;
+          } else {
+            throw new ProvisionException("Unknown HBase version: " + HBaseVersion.getVersionString());
+          }
+        case UNKNOWN:
+          cConf = getCConfiguration();
+          if (cConf.get(Constants.HBase.HBASE_AUTO_LATEST_VERSION).equals(
               cConf.get(Constants.HBase.HBASE_VERSION_FOR_UNKNOWN_VERSION))) {
             instance = createInstance(getLatestHBaseClassName());
             break;
@@ -92,11 +100,18 @@ public abstract class HBaseVersionSpecificFactory<T> implements Provider<T> {
   protected abstract String getHBase12CHD570ClassName();
 
   /**
+   * Return the latest HBase CDH class name. Must be updated when adding new HBase CDH version.
+   */
+  String getLatestHBaseCDHClassName() {
+    return getHBase12CHD570ClassName();
+  }
+
+  /**
    * Return the latest HBase class name. Must be updated when adding new HBase version.
    */
   String getLatestHBaseClassName() {
-    return getHBase12CHD570ClassName();
+    return getHBase11Classname();
   }
-  @Nullable
+
   protected abstract CConfiguration getCConfiguration();
 }

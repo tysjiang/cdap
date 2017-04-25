@@ -24,6 +24,7 @@ import co.cask.cdap.data2.util.hbase.HBaseVersionSpecificFactory;
  * of HBase that is being used.
  */
 public class HBaseTestFactory extends HBaseVersionSpecificFactory<HBaseTestBase> {
+  private final CConfiguration cConf = CConfiguration.create();
   @Override
   protected String getHBase96Classname() {
     return "co.cask.cdap.data.hbase.HBase96Test";
@@ -61,6 +62,6 @@ public class HBaseTestFactory extends HBaseVersionSpecificFactory<HBaseTestBase>
 
   @Override
   protected CConfiguration getCConfiguration() {
-    return null;
+    return cConf;
   }
 }
