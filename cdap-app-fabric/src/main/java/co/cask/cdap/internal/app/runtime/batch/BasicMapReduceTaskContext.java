@@ -287,16 +287,17 @@ public class BasicMapReduceTaskContext<KEYOUT, VALUEOUT> extends AbstractContext
   }
 
   @Override
-  protected <T extends Dataset> T getDataset(String name, Map<String, String> arguments, AccessType accessType)
-    throws DatasetInstantiationException {
+  public <T extends Dataset> T getDataset(String name, Map<String, String> arguments,
+                                          AccessType accessType) throws DatasetInstantiationException {
     T dataset = super.getDataset(name, adjustRuntimeArguments(arguments), accessType);
     startDatasetTransaction(dataset);
     return dataset;
   }
 
   @Override
-  protected <T extends Dataset> T getDataset(String namespace, String name, Map<String, String> arguments,
-                                             AccessType accessType) throws DatasetInstantiationException {
+  public <T extends Dataset> T getDataset(String namespace, String name,
+                                          Map<String, String> arguments,
+                                          AccessType accessType) throws DatasetInstantiationException {
     T dataset = super.getDataset(namespace, name, adjustRuntimeArguments(arguments), accessType);
     startDatasetTransaction(dataset);
     return dataset;

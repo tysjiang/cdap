@@ -52,6 +52,7 @@ import co.cask.cdap.common.lang.ClassLoaders;
 import co.cask.cdap.common.lang.CombineClassLoader;
 import co.cask.cdap.common.service.Retries;
 import co.cask.cdap.common.service.RetryStrategy;
+import co.cask.cdap.data.LineageDatasetContext;
 import co.cask.cdap.data.dataset.SystemDatasetInstantiator;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
 import co.cask.cdap.data2.dataset2.DynamicDatasetCache;
@@ -88,7 +89,7 @@ import javax.annotation.Nullable;
  * Base class for program runtime context
  */
 public abstract class AbstractContext extends AbstractServiceDiscoverer
-  implements SecureStore, DatasetContext, Transactional, RuntimeContext, PluginContext, MessagingContext {
+  implements SecureStore, LineageDatasetContext, Transactional, RuntimeContext, PluginContext, MessagingContext {
 
   private final Program program;
   private final ProgramOptions programOptions;
@@ -299,9 +300,10 @@ public abstract class AbstractContext extends AbstractServiceDiscoverer
     return getDataset(namespace, name, arguments, AccessType.UNKNOWN);
   }
 
-  protected <T extends Dataset> T getDataset(final String namespace, final String name,
-                                             final Map<String, String> arguments,
-                                             final AccessType accessType) throws DatasetInstantiationException {
+  @Override
+  public <T extends Dataset> T getDataset(final String namespace, final String name,
+                                          final Map<String, String> arguments,
+                                          final AccessType accessType) throws DatasetInstantiationException {
     if (NamespaceId.SYSTEM.getNamespace().equalsIgnoreCase(namespace)) {
       throw new DatasetInstantiationException(String.format("Dataset %s cannot be instantiated from %s namespace. " +
                                                               "Cannot access %s namespace.",
@@ -316,10 +318,9 @@ public abstract class AbstractContext extends AbstractServiceDiscoverer
     }, retryStrategy);
   }
 
-  protected <T extends Dataset> T getDataset(final String name, final Map<String, String> arguments,
-                                             final AccessType accessType)
-    throws DatasetInstantiationException {
-
+  @Override
+  public <T extends Dataset> T getDataset(final String name, final Map<String, String> arguments,
+                                          final AccessType accessType) throws DatasetInstantiationException {
     return Retries.callWithRetries(new Retries.Callable<T, DatasetInstantiationException>() {
       @Override
       public T call() throws DatasetInstantiationException {
