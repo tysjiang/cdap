@@ -26,6 +26,7 @@ import co.cask.cdap.internal.app.runtime.DataFabricFacade;
 import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.common.util.concurrent.Service;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import org.apache.tephra.TransactionFailureException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +69,15 @@ final class FlowletRuntimeService extends AbstractIdleService {
 
     serviceHook.startAndWait();
     initFlowlet();
-    flowletProcessDriver.startAndWait();
+    try {
+      flowletProcessDriver.startAndWait();
+    } catch (UncheckedExecutionException e) {
+      LOG.error("Failed to start Flowlet '{}' for Flow '{}'",
+                flowletContext.getFlowletId(), flowletContext.getFlowId(), e);
+      throw e;
+    }
+    LOG.info("Started Flowlet '{}' for Flow '{}'. Flowlet details: [{}]",
+             flowletContext.getFlowletId(), flowletContext.getFlowId(), flowletContext);
   }
 
   @Override
@@ -78,6 +87,7 @@ final class FlowletRuntimeService extends AbstractIdleService {
       stopService(flowletProcessDriver);
     }
     destroyFlowlet();
+    LOG.info("Stopped Flowlet '{}' for Flow '{}'", flowletContext.getFlowletId(), flowletContext.getFlowId());
     stopService(serviceHook);
   }
 
@@ -104,28 +114,28 @@ final class FlowletRuntimeService extends AbstractIdleService {
   }
 
   private void initFlowlet() throws InterruptedException {
-    LOG.info("Initializing flowlet: " + flowletContext);
+    LOG.debug("Initializing flowlet: {}", flowletContext);
     try {
       try {
         flowletContext.initializeProgram(flowlet, flowletContext, Transactions.getTransactionControl(
           TransactionControl.IMPLICIT, Flowlet.class, flowlet, "initialize", FlowletContext.class), false);
-        LOG.info("Flowlet initialized: " + flowletContext);
+        LOG.debug("Flowlet initialized: {}", flowletContext);
       } catch (TransactionFailureException e) {
         throw e.getCause() == null ? e : e.getCause();
       }
     } catch (Throwable cause) {
-      LOG.error("Flowlet threw exception during flowlet initialization: " + flowletContext, cause);
+      LOG.error("Flowlet threw exception during flowlet initialization: {}", flowletContext, cause);
       throw Throwables.propagate(cause);
     }
   }
 
   private void destroyFlowlet() {
-    LOG.info("Destroying flowlet: " + flowletContext);
+    LOG.debug("Destroying flowlet: {}", flowletContext);
     try {
       try {
         flowletContext.destroyProgram(flowlet, flowletContext, Transactions.getTransactionControl(
           TransactionControl.IMPLICIT, Flowlet.class, flowlet, "destroy"), false);
-        LOG.info("Flowlet destroyed: " + flowletContext);
+        LOG.debug("Flowlet destroyed: " + flowletContext);
       } catch (TransactionFailureException e) {
         throw e.getCause() == null ? e : e.getCause();
       }
