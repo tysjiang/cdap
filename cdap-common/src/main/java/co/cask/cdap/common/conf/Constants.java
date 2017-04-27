@@ -123,9 +123,14 @@ public final class Constants {
     public static final String MANAGE_COPROCESSORS = "master.manage.hbase.coprocessors";
     public static final String CLIENT_RETRIES = "hbase.client.retries.number";
     public static final String RPC_TIMEOUT = "hbase.rpc.timeout";
-    /** Whether to use latest HBase version when HBase version is unknown */
-    public static final String HBASE_VERSION_FOR_UNKNOWN_VERSION = "hbase.version";
+    /** Whether to use latest HBase version when HBase version is unknown. cdap_set_hbase() method
+     * in cdap-common/bin/functions.sh must also be updated if this String is changed */
+    public static final String HBASE_VERSION_FOR_UNKNOWN_VERSION = "hbase.compat.module.version";
+    /** Keep HBase version as it is when HBase version is unknown. cdap_set_hbase() method
+     * in cdap-common/bin/functions.sh must also be updated if this String is changed */
     public static final String HBASE_AUTO_EXACT_VERSION = "auto.exact";
+    /** Use latest HBase version when HBase version is unknown. cdap_set_hbase() method
+     * in cdap-common/bin/functions.sh must also be updated if this String is changed */
     public static final String HBASE_AUTO_LATEST_VERSION = "auto.latest";
   }
 

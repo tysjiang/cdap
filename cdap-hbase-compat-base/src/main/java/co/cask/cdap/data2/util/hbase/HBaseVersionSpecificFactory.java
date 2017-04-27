@@ -34,6 +34,9 @@ public abstract class HBaseVersionSpecificFactory<T> implements Provider<T> {
   @Override
   public T get() {
     T instance = null;
+    CConfiguration cConf = getCConfiguration();
+    boolean useLatestVersionForUnknown = cConf.get(Constants.HBase.HBASE_AUTO_LATEST_VERSION).equals(
+      cConf.get(Constants.HBase.HBASE_VERSION_FOR_UNKNOWN_VERSION));
     try {
       switch (HBaseVersion.get()) {
         case HBASE_94:
@@ -61,18 +64,14 @@ public abstract class HBaseVersionSpecificFactory<T> implements Provider<T> {
           instance = createInstance(getHBase12CHD570ClassName());
           break;
         case UNKNOWN_CDH:
-          CConfiguration cConf = getCConfiguration();
-          if (cConf.get(Constants.HBase.HBASE_AUTO_LATEST_VERSION).equals(
-            cConf.get(Constants.HBase.HBASE_VERSION_FOR_UNKNOWN_VERSION))) {
+          if (useLatestVersionForUnknown) {
             instance = createInstance(getLatestHBaseCDHClassName());
             break;
           } else {
             throw new ProvisionException("Unknown HBase version: " + HBaseVersion.getVersionString());
           }
         case UNKNOWN:
-          cConf = getCConfiguration();
-          if (cConf.get(Constants.HBase.HBASE_AUTO_LATEST_VERSION).equals(
-              cConf.get(Constants.HBase.HBASE_VERSION_FOR_UNKNOWN_VERSION))) {
+          if (useLatestVersionForUnknown) {
             instance = createInstance(getLatestHBaseClassName());
             break;
           } else {

@@ -63,6 +63,8 @@ public class ExploreServiceUtils {
     "org/apache/hadoop/hive/ql/session/SessionState.class", Collections.singleton("loadAuxJars")
   );
 
+  private static final Pattern CDH_PATTERN = Pattern.compile("^.*cdh\\..*$");
+
   /**
    * Hive support enum.
    */
@@ -76,6 +78,8 @@ public class ExploreServiceUtils {
     HIVE_CDH5_3(Pattern.compile("^.*cdh5.3\\..*$"), Hive13ExploreService.class),
     // CDH > 5.3 uses Hive >= 1.1 (which Hive14ExploreService supports)
     HIVE_CDH5(Pattern.compile("^.*cdh5\\..*$"), Hive14ExploreService.class),
+    // Current latest CDH version uses Hive >= 1.1. Need to update HIVE_CDH_LATEST when newer CDH version is added.
+    HIVE_CDH_LATEST(null, Hive14ExploreService.class),
 
     HIVE_12(null, Hive12ExploreService.class),
     HIVE_13(null, Hive13ExploreService.class),
@@ -83,7 +87,8 @@ public class ExploreServiceUtils {
     HIVE_1_0(null, Hive14ExploreService.class),
     HIVE_1_1(null, Hive14ExploreService.class),
     HIVE_1_2(null, Hive14ExploreService.class),
-    LATEST(HIVE_1_2); // Current latest version is HIVE_1_2. Need to update LATEST newer version is added.
+    // Current latest non-CDH version is HIVE_1_2. Need to update HIVE_LATEST when newer non-CDH version is added.
+    HIVE_LATEST(HIVE_1_2);
 
     private final Pattern hadoopVersionPattern;
     private final Class<? extends ExploreService> hiveExploreServiceClass;
@@ -161,6 +166,13 @@ public class ExploreServiceUtils {
       }
     }
 
+    boolean useLatestVersionForUnknown = cConf.get(Constants.Explore.HIVE_AUTO_LATEST_VERSION).equals(
+      cConf.get(Constants.Explore.HIVE_VERSION_FOR_UNKNOWN_VERSION));
+    if (useLatestVersionForUnknown && CDH_PATTERN.matcher(hadoopVersion).matches()) {
+      LOG.info("CDH Hadoop version '{}' is unknown. Using the latest Hive version available in CDAP. ", hadoopVersion);
+      return HiveSupport.HIVE_CDH_LATEST;
+    }
+
     String hiveVersion = getHiveVersion(hiveClassLoader);
     LOG.debug("Client Hive version: {}", hiveVersion);
     if (hiveVersion.startsWith("0.12.")) {
@@ -175,11 +187,9 @@ public class ExploreServiceUtils {
       return HiveSupport.HIVE_1_2;
     }
 
-    if (cConf != null
-      && cConf.get(Constants.Explore.HIVE_AUTO_LATEST_VERSION).equals(
-      cConf.get(Constants.Explore.HIVE_VERSION_FOR_UNKNOWN_VERSION))) {
+    if (useLatestVersionForUnknown) {
       LOG.info("Hive version '{}' is unknown. Using the latest Hive version available in CDAP. ", hiveVersion);
-      return HiveSupport.LATEST;
+      return HiveSupport.HIVE_LATEST;
     }
 
     throw new RuntimeException("Hive distribution not supported. Set the configuration '" +

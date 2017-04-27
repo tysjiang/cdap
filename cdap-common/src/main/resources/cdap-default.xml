@@ -1367,7 +1367,7 @@
   </property>
 
   <property>
-    <name>hbase.version</name>
+    <name>hbase.compat.module.version</name>
     <value>auto.exact</value>
     <description>
       Whether to use latest HBase version when hive version is unknown; defaults to "auto.exact" to keep unknown version

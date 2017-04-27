@@ -414,14 +414,14 @@ cdap_set_hbase() {
     1.2*) __compat="${CDAP_HOME}"/hbase-compat-1.1/lib/* ;; # 1.1 and 1.2 are compatible
     "") die "Unable to determine HBase version! Aborting." ;;
     *-cdh*)
-      if [[ $(cdap_get_conf "hbase.latest.version.for.unknown.version" "${CDAP_CONF}"/cdap-site.xml false) == 'true' ]]; then
+      if [[ $(cdap_get_conf "hbase.compat.module.version" "${CDAP_CONF}"/cdap-site.xml auto.exact) == 'auto.latest' ]]; then
         __compat="${CDAP_HOME}"/hbase-compat-1.2-cdh5.7.0/lib/* # if allowed, return the latest CDH HBase version for unknown version
       else
         die "Unknown/Unsupported HBase version found: ${HBASE_VERSION}"
       fi
       ;;
     *)
-      if [[ $(cdap_get_conf "hbase.latest.version.for.unknown.version" "${CDAP_CONF}"/cdap-site.xml false) == 'true' ]]; then
+      if [[ $(cdap_get_conf "hbase.compat.module.version" "${CDAP_CONF}"/cdap-site.xml auto.exact) == 'auto.latest' ]]; then
         __compat="${CDAP_HOME}"/hbase-compat-1.1/lib/* # if allowed, return the latest HBase version for unknown version
       else
         die "Unknown/Unsupported HBase version found: ${HBASE_VERSION}"
