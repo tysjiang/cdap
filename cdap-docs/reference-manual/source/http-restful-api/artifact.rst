@@ -115,9 +115,9 @@ Example output (pretty-printed):
 
 List Artifact Versions
 ======================
-To list all versions of a specific artifact, submit an HTTP GET request::
+To list all versions or versions of specific range of a specific artifact, submit an HTTP GET request::
 
-  GET /v3/namespaces/<namespace-id>/artifact/<artifact-name>[?scope=<scope>]
+  GET /v3/namespaces/<namespace-id>/artifact/<artifact-name>[?scope=<scope>&artifactVersion=<version>&limit=<limit>&order=<order>]
 
 .. list-table::
    :widths: 20 80
@@ -131,6 +131,17 @@ To list all versions of a specific artifact, submit an HTTP GET request::
      - Name of the artifact
    * - ``scope``
      - Optional scope filter. If not specified, defaults to ``user``.
+   * - ``artifactVersion``
+     - Optional version filter. All versions within this range will be returned.
+       It can either be an exact version like 1.0.0 or be a version range like [1.0.0, 2.0.0)
+       If not specified, defaults to return all versions.
+   * - ``limit``
+     - Optional limit filter. Limit the number of the returned results.
+       If not specified, defaults to return all artifacts which satisfy the requirement.
+   * - ``order``
+     - Optional order filter. Accepted value are DESC, ASC and UNORDERED.
+       DESC will sort the artifacts first by scope, then version from largest to smallest, opposite for ASC
+       If not specified, defaults to ``UNORDERED``.
 
 This will return a JSON array that lists each version of the specified artifact with
 its name, version, and scope. Example output for the ``cdap-data-pipeline`` artifact (pretty-printed):
@@ -490,7 +501,7 @@ Retrieve Plugin Details
 To retrieve details about a specific plugin available to an artifact, submit
 an HTTP GET request::
 
-  GET /v3/namespaces/<namespace-id>/artifacts/<artifact-name>/versions/<artifact-version>/extensions/<plugin-type>/plugins/<plugin-name>[?scope=<scope>]
+  GET /v3/namespaces/<namespace-id>/artifacts/<artifact-name>/versions/<artifact-version>/extensions/<plugin-type>/plugins/<plugin-name>[?scope=<scope>&artifactName=<pluginArtifactName>&artifactVersion=<pluginVersion>&artifactScope=<pluginScope>&limit=<limit>&order=<order>]
 
 .. list-table::
    :widths: 20 80
@@ -501,15 +512,32 @@ an HTTP GET request::
    * - ``namespace-id``
      - Namespace ID
    * - ``artifact-name``
-     - Name of the artifact
+     - Name of the parent artifact
    * - ``artifact-version``
-     - Version of the artifact
+     - Version of the parent artifact
    * - ``plugin-type``
      - Type of the plugin
    * - ``plugin-name``
      - Name of the plugin
    * - ``scope``
-     - Optional scope filter. If not specified, defaults to 'user'.
+     - Optional scope filter. Scope of the parent artifact. If not specified, defaults to 'user'.
+   * - ``artifactName``
+     - Optional plugin artifact name filter.
+       If not specified, defaults to return all plugins available to the parent artifact.
+   * - ``artifactVersion``
+     - Optional plugin version filter. All plugin artifact versions within this range will be returned.
+       It can either be an exact version like 1.0.0 or be a version range like [1.0.0, 2.0.0)
+       If not specified, defaults to return all plugins available to the parent artifact.
+   * - ``artifactScope``
+     - Optional plugin scope filter. Scope of the plugin artifact scope.
+       If not specified, defaults to return plugins in both SYSTEM and USER scope.
+   * - ``limit``
+     - Optional limit filter. Limit the number of the returned results.
+       If not specified, defaults to return all plugins which satisfy the requirement.
+   * - ``order``
+     - Optional order filter. Accepted value are DESC, ASC and UNORDERED.
+       DESC will sort the plugin artifacts first by scope, then name, then version from largest to smallest, opposite for ASC
+       If not specified, defaults to ``UNORDERED``.
 
 This will return a JSON array that lists the plugins of the specified type and name
 available to the artifact. As can been seen compared with the endpoint
