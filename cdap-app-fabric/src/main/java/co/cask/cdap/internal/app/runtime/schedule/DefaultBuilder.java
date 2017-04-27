@@ -17,35 +17,46 @@
 package co.cask.cdap.internal.app.runtime.schedule;
 
 import co.cask.cdap.api.schedule.Builder;
-import co.cask.cdap.internal.app.runtime.schedule.constraint.Constraint;
-import co.cask.cdap.api.schedule.trigger.PFSTrigger;
-import co.cask.cdap.api.schedule.trigger.TimeTrigger;
 import co.cask.cdap.internal.app.runtime.schedule.constraint.ConcurrencyConstraint;
+import co.cask.cdap.internal.app.runtime.schedule.constraint.Constraint;
 import co.cask.cdap.internal.app.runtime.schedule.constraint.DelayConstraint;
 import co.cask.cdap.internal.app.runtime.schedule.constraint.DurationSinceLastRunConstraint;
 import co.cask.cdap.internal.app.runtime.schedule.constraint.TimeRangeConstraint;
+import co.cask.cdap.internal.app.runtime.schedule.trigger.PFSTrigger;
+import co.cask.cdap.internal.app.runtime.schedule.trigger.TimeTrigger;
+import co.cask.cdap.proto.id.ProgramId;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
- *
+ * The default implementation of {@link Builder}.
  */
 public class DefaultBuilder implements Builder {
 
   private final String name;
+  private final ProgramId programId;
   private String description;
+  private Map<String, String> properties;
   private List<Constraint> constraints;
 
-  private DefaultBuilder(String name) {
+  private DefaultBuilder(String name, ProgramId programId) {
     this.name = name;
     this.description = "";
+    this.programId = programId;
     this.constraints = new ArrayList<>();
   }
 
   @Override
   public Builder setDescription(String description) {
     this.description = description;
+    return this;
+  }
+
+  @Override
+  public Builder setProperties(Map<String, String> properties) {
+    this.properties = properties;
     return this;
   }
 
@@ -80,12 +91,13 @@ public class DefaultBuilder implements Builder {
   @Override
   public void createTimeSchedule(String cronExpression) {
     // TODO: associate the schedule with the program
-    new ProgramSchedule(name, description, new TimeTrigger(cronExpression), constraints);
+    new ProgramSchedule(name, description, programId, properties, new TimeTrigger(cronExpression), constraints);
   }
 
   @Override
-  public void createPFSTrigger(String datasetName) {
+  public void createPFSTrigger(String datasetName, int numPartitions) {
     // TODO: associate the schedule with the program
-    new ProgramSchedule(name, description, new PFSTrigger(datasetName), constraints);
+    new ProgramSchedule(name, description, programId, properties,
+                        new PFSTrigger(datasetName, numPartitions), constraints);
   }
 }

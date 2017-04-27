@@ -25,7 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- *
+ * Test case for serializing and deserializing {@link Notification}.
  */
 public class NotificationCodecTest {
 

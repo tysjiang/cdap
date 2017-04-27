@@ -14,15 +14,11 @@
  * the License.
  */
 
-package co.cask.cdap.api.schedule.trigger;
+package co.cask.cdap.internal.app.runtime.schedule.trigger;
 
 /**
- *
+ * The mechanism by which a ProgramSchedule is scheduled.
  */
-public class TimeTrigger extends Trigger {
-  private final String cronExpr;
+public class Trigger {
 
-  public TimeTrigger(String cronExpr) {
-    this.cronExpr = cronExpr;
-  }
 }

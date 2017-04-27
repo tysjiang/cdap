@@ -14,18 +14,19 @@
  * the License.
  */
 
-package co.cask.cdap.api.schedule.trigger;
-
+package co.cask.cdap.internal.app.runtime.schedule.trigger;
 
 /**
- *
+ * A Trigger that schedules a ProgramSchedule, based upon a particular cron expression.
  */
-public class PFSTrigger extends Trigger {
-  private final String pfsName;
-  // TODO: implement numPartitions in the trigger
-  // private final int numPartitions;
+public class TimeTrigger extends Trigger {
+  private final String cronExpr;
 
-  public PFSTrigger(String pfsName) {
-    this.pfsName = pfsName;
+  public TimeTrigger(String cronExpr) {
+    this.cronExpr = cronExpr;
+  }
+
+  public String getCronExpr() {
+    return cronExpr;
   }
 }

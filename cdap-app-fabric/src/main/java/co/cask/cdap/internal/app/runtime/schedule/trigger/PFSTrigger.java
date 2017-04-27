@@ -14,14 +14,26 @@
  * the License.
  */
 
-package co.cask.cdap.api.schedule.trigger;
+package co.cask.cdap.internal.app.runtime.schedule.trigger;
+
 
 /**
- *
+ * A Trigger that schedules a ProgramSchedule, when a certain number of partitions are added to a PartitionedFileSet.
  */
-public class Trigger {
-  // in the Java object, this will be implicit in the class type
-  // triggerType: Time, PFS, etc...
-  // private final String triggerType;
+public class PFSTrigger extends Trigger {
+  private final String pfsName;
+  private final int numPartitions;
 
+  public PFSTrigger(String pfsName, int numPartitions) {
+    this.pfsName = pfsName;
+    this.numPartitions = numPartitions;
+  }
+
+  public String getPfsName() {
+    return pfsName;
+  }
+
+  public int getNumPartitions() {
+    return numPartitions;
+  }
 }

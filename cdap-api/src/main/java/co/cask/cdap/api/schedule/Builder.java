@@ -16,12 +16,16 @@
 
 package co.cask.cdap.api.schedule;
 
+import java.util.Map;
+
 /**
  * Builder for scheduling.
  */
 public interface Builder {
 
   Builder setDescription(String description);
+
+  Builder setProperties(Map<String, String> properties);
 
   Builder limitConcurrentRuns(int max);
 
@@ -33,5 +37,5 @@ public interface Builder {
 
   void createTimeSchedule(String cronExpression);
 
-  void createPFSTrigger(String datasetName);
+  void createPFSTrigger(String datasetName, int numPartitions);
 }
