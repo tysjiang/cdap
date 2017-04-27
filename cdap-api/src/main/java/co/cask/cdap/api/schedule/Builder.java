@@ -14,24 +14,24 @@
  * the License.
  */
 
-package co.cask.cdap.api.schedule.constraints;
-
-import co.cask.cdap.api.schedule.ProgramSchedule;
+package co.cask.cdap.api.schedule;
 
 /**
- *
+ * Builder for scheduling.
  */
-public class ConcurrencyConstraint extends Constraint {
+public interface Builder {
 
-  private final int maxConcurrency;
+  Builder setDescription(String description);
 
-  public ConcurrencyConstraint(int maxConcurrency) {
-    this.maxConcurrency = maxConcurrency;
-  }
+  Builder limitConcurrentRuns(int max);
 
-  @Override
-  public Result check(ProgramSchedule schedule, ConstraintCheckContext context) {
-    // TODO: Implement constraints: CDAP-11338
-    return Result.SATISFIED;
-  }
+  Builder delayRun(long delayMillis);
+
+  Builder setTimeRange(int startHour, int endHour);
+
+  Builder setDurationSinceLastRun(long delayMillis);
+
+  void createTimeSchedule(String cronExpression);
+
+  void createPFSTrigger(String datasetName);
 }

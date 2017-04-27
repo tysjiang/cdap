@@ -14,12 +14,12 @@
  * the License.
  */
 
-package co.cask.cdap.api.schedule.constraints;
+package co.cask.cdap.internal.app.runtime.schedule.constraint;
 
-import co.cask.cdap.api.schedule.ProgramSchedule;
+import co.cask.cdap.internal.app.runtime.schedule.ProgramSchedule;
 
 /**
- *
+ * A constraint which requires a certain amount of delay pass after the trigger is fired, before executing the program.
  */
 public class DelayConstraint extends Constraint {
 
@@ -30,7 +30,7 @@ public class DelayConstraint extends Constraint {
   }
 
   @Override
-  public Result check(ProgramSchedule schedule, ConstraintCheckContext context) {
+  public Result check(ProgramSchedule schedule, ConstraintContext context) {
     return Result.SATISFIED;
   }
 }

@@ -14,18 +14,18 @@
  * the License.
  */
 
-package co.cask.cdap.api.schedule.constraints;
+package co.cask.cdap.internal.app.runtime.schedule.constraint;
 
-import co.cask.cdap.api.schedule.ProgramSchedule;
+import co.cask.cdap.internal.app.runtime.schedule.ProgramSchedule;
 
 import javax.annotation.Nullable;
 
 /**
- *
+ * A constraint that is checked before executing a schedule.
  */
 public abstract class Constraint {
 
-  public abstract Result check(ProgramSchedule schedule, ConstraintCheckContext context);
+  public abstract Result check(ProgramSchedule schedule, ConstraintContext context);
 
   static class Result {
     public static final Result SATISFIED = new Result(true, null);

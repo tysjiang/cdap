@@ -14,23 +14,27 @@
  * the License.
  */
 
-package co.cask.cdap.api.schedule.constraints;
+package co.cask.cdap.internal.app.runtime.schedule.constraint;
 
-import co.cask.cdap.api.schedule.ProgramSchedule;
+import co.cask.cdap.internal.app.runtime.schedule.ProgramSchedule;
 
 /**
- *
+ * A Constraint that defines a time range in which the schedule is allowed to execute.
  */
-public class DurationSinceLastRunConstraint extends Constraint {
+public class TimeRangeConstraint extends Constraint {
 
-  private final long millisSinceLastRun;
+  // only is satisfied within the range [startHour, endHour)
+  // TODO: Allow minute granularity
+  private final int startHour;
+  private final int endHour;
 
-  public DurationSinceLastRunConstraint(long millisSinceLastRun) {
-    this.millisSinceLastRun = millisSinceLastRun;
+  public TimeRangeConstraint(int startHour, int endHour) {
+    this.startHour = startHour;
+    this.endHour = endHour;
   }
 
   @Override
-  public Result check(ProgramSchedule schedule, ConstraintCheckContext context) {
+  public Result check(ProgramSchedule schedule, ConstraintContext context) {
     return null;
   }
 }

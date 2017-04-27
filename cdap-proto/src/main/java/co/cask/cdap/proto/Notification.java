@@ -17,12 +17,16 @@
 package co.cask.cdap.proto;
 
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Notification for events, such as cron expression triggering or data being added to a dataset.
  */
 public class Notification {
-  enum Type {
+  /**
+   *
+   */
+  public enum Type {
     TIME,
     PARTITION
   }
@@ -47,5 +51,26 @@ public class Notification {
 
   public Map<String, String> getProperties() {
     return properties;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    Notification that = (Notification) o;
+
+    return Objects.equals(timestamp, that.timestamp)
+      && Objects.equals(triggerType, that.triggerType)
+      && Objects.equals(properties, that.properties);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(timestamp, triggerType, properties);
   }
 }

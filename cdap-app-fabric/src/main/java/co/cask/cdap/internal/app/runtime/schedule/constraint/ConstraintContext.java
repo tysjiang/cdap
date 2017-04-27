@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.cdap.api.schedule.constraints;
+package co.cask.cdap.internal.app.runtime.schedule.constraint;
 
 import co.cask.cdap.proto.Notification;
 import co.cask.cdap.proto.ProgramRunStatus;
@@ -24,13 +24,13 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 /**
- *
+ * Context object, exposing information that may be useful during checking constraints.
  */
-public final class ConstraintCheckContext {
+public final class ConstraintContext {
   private final List<RunRecord> history;
   private final Notification notification;
 
-  public ConstraintCheckContext(List<RunRecord> history, Notification notification) {
+  public ConstraintContext(List<RunRecord> history, Notification notification) {
     this.history = history;
     this.notification = notification;
   }

@@ -14,15 +14,15 @@
  * the License.
  */
 
-package co.cask.cdap.api.schedule;
+package co.cask.cdap.internal.app.runtime.schedule;
 
-import co.cask.cdap.api.schedule.constraints.Constraint;
 import co.cask.cdap.api.schedule.trigger.Trigger;
+import co.cask.cdap.internal.app.runtime.schedule.constraint.Constraint;
 
 import java.util.List;
 
 /**
- * A schedule for a program, defined by its Trigger as well
+ * A schedule for a program, defined by a Trigger as well its constraints.
  */
 public class ProgramSchedule {
   private final String name;
@@ -36,5 +36,21 @@ public class ProgramSchedule {
     this.description = description;
     this.trigger = trigger;
     this.constraints = constraints;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public Trigger getTrigger() {
+    return trigger;
+  }
+
+  public List<Constraint> getConstraints() {
+    return constraints;
   }
 }
