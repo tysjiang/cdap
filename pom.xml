@@ -97,6 +97,7 @@
     <avro.version>1.6.2</avro.version>
     <cask.common.cli.version>0.8.0</cask.common.cli.version>
     <cask.common.version>0.7.1</cask.common.version>
+    <cdap.api.spark.base.scope>compile</cdap.api.spark.base.scope>
     <cdap.client.version>1.2.0</cdap.client.version>
     <commons.cli.version>1.2</commons.cli.version>
     <commons.codec.version>1.6</commons.codec.version>
@@ -1961,6 +1962,7 @@
         <package.rpm.arch>all</package.rpm.arch>
         <package.dirs>opt etc</package.dirs>
         <package.config.dirs>--config-files etc/cdap --config-files etc/logrotate.d --config-files etc/security</package.config.dirs>
+        <cdap.api.spark.base.scope>provided</cdap.api.spark.base.scope>
       </properties>
       <build>
         <pluginManagement>
@@ -2582,7 +2584,7 @@
         <module>cdap-spi</module>
         <module>cdap-api</module>
         <module>cdap-api-spark</module>
-        <module>cdap-api-spark2</module>
+        <module>cdap-api-spark2_2.11</module>
         <module>cdap-api-spark-base</module>
         <module>cdap-formats</module>
         <module>cdap-hbase-compat-base</module>
