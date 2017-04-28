@@ -35,7 +35,6 @@
       <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-api-spark-base</artifactId>
       <version>${project.version}</version>
-      <scope>${cdap.api.spark.base.scope}</scope>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
@@ -193,30 +192,18 @@
   <profiles>
     <profile>
       <id>dist</id>
+      <dependencies>
+        <!-- override base to be provided since we will be using base's source code as our own -->
+        <dependency>
+          <groupId>co.cask.cdap</groupId>
+          <artifactId>cdap-api-spark-base</artifactId>
+          <version>${project.version}</version>
+          <scope>provided</scope>
+        </dependency>
+      </dependencies>
       <build>
         <plugins>
-          <!-- for the build, we copy the source from cdap-api-spark-base in order to compile everything as scala 2.10 -->
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-resources-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>copy-src</id>
-                <phase>generate-sources</phase>
-                <goals>
-                  <goal>copy-resources</goal>
-                </goals>
-                <configuration>
-                  <outputDirectory>${project.build.directory}/src-base</outputDirectory>
-                  <resources>
-                    <resource>
-                      <directory>${project.parent.basedir}/cdap-api-spark-base/src</directory>
-                    </resource>
-                  </resources>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
+          <!-- for the build, we copy the source from cdap-api-spark-base in order to compile everything as scala 2.11 -->
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>build-helper-maven-plugin</artifactId>
@@ -230,7 +217,7 @@
                 </goals>
                 <configuration>
                   <sources>
-                    <source>${project.build.directory}/src-base/main</source>
+                    <source>${project.parent.basedir}/cdap-api-spark-base/src/main</source>
                   </sources>
                 </configuration>
               </execution>
