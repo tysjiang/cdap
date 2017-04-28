@@ -18,18 +18,36 @@
   TODO: This is just a stub(mock) for jest to not invoke the actual socket connection.
   This needs to be exported as a singleton class. Will do when we actually need to mock a function.
 */
-const get = () => {};
-const status = () => {};
-const runs = () => {};
-const pollRuns = () => {};
-const pollStatus = () => {};
-const action = () => {};
+import Rx from 'rx';
 
-export default {
-  get,
-  status,
-  runs,
-  pollRuns,
-  pollStatus,
-  action
+const MyProgramApi = {
+  runRecords: [],
+  status: {},
+  __isError: false
 };
+
+MyProgramApi.setRunRecords = function(records, isError) {
+  this.runRecords = records;
+  this.__isError = isError;
+};
+MyProgramApi.setProgramStatus = function(status, isError) {
+  this.status = status;
+  this.__isError = isError;
+};
+MyProgramApi.generalGetter = function(property) {
+  return function() {
+    let subject = new Rx.Subject();
+    setTimeout(() => {
+      if (this.__isError) {
+        subject.onError(this[property]);
+        return;
+      }
+      subject.onNext(this[property]);
+    });
+    return subject;
+  }.bind(this);
+};
+MyProgramApi.pollRuns = MyProgramApi.generalGetter('runRecords');
+MyProgramApi.runs = MyProgramApi.generalGetter('runRecords');
+MyProgramApi.pollStatus = MyProgramApi.generalGetter('status');
+module.exports = {MyProgramApi};

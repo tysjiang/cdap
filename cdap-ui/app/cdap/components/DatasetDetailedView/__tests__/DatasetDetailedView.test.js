@@ -46,59 +46,95 @@ jest.useFakeTimers();
 
 import {MyMetadataApi} from 'api/metadata';
 import {MyDatasetApi} from 'api/dataset';
-
-
+import {MyProgramApi} from 'api/program';
+const datasetProperties = {
+  "programs": [
+    {
+      "application": {
+        "namespace": {
+          "id": "default"
+        },
+        "applicationId": "dataprep"
+      },
+      "type": "Service",
+      "id": "service",
+      "uniqueId": "rkfgNzP3Cl",
+      "app": "dataprep",
+      "name": "service"
+    }
+  ],
+  "schema": "",
+  "name": "MyApp1",
+  "app": "MyApp1",
+  "id": "recipes",
+  "type": "datasetinstance",
+  "properties": {
+    "schema": "",
+    "creation-time": "1492442466016",
+    "type": "co.cask.cdap.api.dataset.lib.ObjectMappedTable",
+    "entity-name": "recipes"
+  }
+};
+const datasetPrograms = [{
+  id: 'program1',
+  "type": "Service",
+  application: {
+    applicationId: 'MyApp1'
+  }
+}];
+const programStatus = {
+  status: 'RUNNING'
+};
+const programRunRecords = [
+  {
+    "runid": "fd9138a1-2a07-11e7-be3d-42010a800009",
+    "start": 1493159946,
+    "status": "RUNNING",
+    "properties": {
+      "runtimeArgs": "{\"logical.start.time\":\"1493159946525\"}"
+    }
+  }
+];
+window.getTrackerUrl = jest.fn();
 describe('Unit tests for DatasetDetailedView', () => {
   it('Should render a valid dataset', () => {
-    MyMetadataApi.__setProperties({
-      "programs": [
-        {
-          "application": {
-            "namespace": {
-              "id": "default"
-            },
-            "applicationId": "dataprep"
-          },
-          "type": "Service",
-          "id": "service",
-          "uniqueId": "rkfgNzP3Cl",
-          "app": "dataprep",
-          "name": "service"
-        }
-      ],
-      "schema": "",
-      "name": "MyApp1",
-      "app": "MyApp1",
-      "id": "recipes",
-      "type": "datasetinstance",
-      "properties": {
-        "schema": "",
-        "creation-time": "1492442466016",
-        "type": "co.cask.cdap.api.dataset.lib.ObjectMappedTable",
-        "entity-name": "recipes"
-      }
-    });
+    MyMetadataApi.__setProperties(datasetProperties);
     MyMetadataApi.__setTags([]);
-    MyDatasetApi.__setPrograms([{
-      id: 'program1',
-      application: {
-        applicationId: 'MyApp1'
-      }
-    }]);
+    MyDatasetApi.__setPrograms(datasetPrograms);
     let entity = {
       id: 'recipes'
     };
-    window.getTrackerUrl = jest.fn();
+    const RouterRender = (match) => {
+      return <DatasetDetailedView match={match.match} location={match.location} entity={entity} />;
+    };
     let datasetDetailedView = mount(
       <MemoryRouter initialEntries={['/ns/default/datasets/recipes']}>
-        <Route exact path="/ns/:namespace/datasets/:datasetId" render={(match) => {
-          return <DatasetDetailedView match={match.match} location={match.location} entity={entity} />;
-        }} />
+        <Route exact path="/ns/:namespace/datasets/:datasetId" render={RouterRender} />
       </MemoryRouter>
     );
     jest.runAllTimers();
     expect(datasetDetailedView.find('.dataset-detailed-view').length).toBe(1);
     expect(datasetDetailedView.find('.dataset-detailed-view .overview-meta-section').length).toBe(1);
     expect(datasetDetailedView.find('.dataset-detailed-view .overview-meta-section h2').props().title).toBe('recipes');
+  });
+  it('Should render individual tabs', () => {
+    MyMetadataApi.__setProperties(datasetProperties);
+    MyMetadataApi.__setTags([]);
+    MyDatasetApi.__setPrograms(datasetPrograms);
+    MyProgramApi.setRunRecords(programRunRecords);
+    MyProgramApi.setProgramStatus(programStatus);
+    let entity = {
+      id: 'recipes'
+    };
+    const RouterRender = (match) => {
+      return <DatasetDetailedView match={match.match} location={match.location} entity={entity} />;
+    };
+    let datasetDetailedView = mount(
+      <MemoryRouter initialEntries={['/ns/default/datasets/recipes/programs']}>
+        <Route path="/ns/:namespace/datasets/:datasetId" render={RouterRender} />
+      </MemoryRouter>
+    );
+    jest.runAllTimers();
+    console.log(datasetDetailedView.html());
   });
 });
