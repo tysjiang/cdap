@@ -23,14 +23,18 @@ import co.cask.cdap.api.Transactional;
 import co.cask.cdap.api.TxRunnable;
 import co.cask.cdap.api.annotation.TransactionControl;
 import co.cask.cdap.api.app.ApplicationSpecification;
+import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.common.RuntimeArguments;
 import co.cask.cdap.api.data.DatasetContext;
 import co.cask.cdap.api.data.DatasetInstantiationException;
 import co.cask.cdap.api.dataset.Dataset;
+import co.cask.cdap.api.dataset.lib.PartitionKey;
+import co.cask.cdap.api.dataset.lib.partitioned.PartitionKeyCodec;
 import co.cask.cdap.api.macro.MacroEvaluator;
 import co.cask.cdap.api.messaging.MessageFetcher;
 import co.cask.cdap.api.messaging.MessagePublisher;
 import co.cask.cdap.api.messaging.MessagingContext;
+import co.cask.cdap.api.messaging.TopicNotFoundException;
 import co.cask.cdap.api.metrics.Metrics;
 import co.cask.cdap.api.metrics.MetricsCollectionService;
 import co.cask.cdap.api.metrics.MetricsContext;
@@ -46,6 +50,7 @@ import co.cask.cdap.app.preview.DataTracerFactory;
 import co.cask.cdap.app.program.Program;
 import co.cask.cdap.app.runtime.ProgramOptions;
 import co.cask.cdap.app.services.AbstractServiceDiscoverer;
+import co.cask.cdap.common.app.RunIds;
 import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.lang.ClassLoaders;
@@ -53,6 +58,8 @@ import co.cask.cdap.common.lang.CombineClassLoader;
 import co.cask.cdap.common.service.Retries;
 import co.cask.cdap.common.service.RetryStrategy;
 import co.cask.cdap.data.LineageDatasetContext;
+import co.cask.cdap.data.RuntimeProgramContext;
+import co.cask.cdap.data.RuntimeProgramContextAware;
 import co.cask.cdap.data.dataset.SystemDatasetInstantiator;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
 import co.cask.cdap.data2.dataset2.DynamicDatasetCache;
@@ -67,22 +74,35 @@ import co.cask.cdap.internal.app.runtime.messaging.BasicMessagingAdmin;
 import co.cask.cdap.internal.app.runtime.messaging.MultiThreadMessagingContext;
 import co.cask.cdap.internal.app.runtime.plugin.PluginInstantiator;
 import co.cask.cdap.messaging.MessagingService;
+import co.cask.cdap.proto.Notification;
 import co.cask.cdap.proto.id.ApplicationId;
+import co.cask.cdap.proto.id.DatasetId;
 import co.cask.cdap.proto.id.EntityId;
 import co.cask.cdap.proto.id.NamespaceId;
+import co.cask.cdap.proto.id.NamespacedEntityId;
 import co.cask.cdap.proto.id.ProgramId;
+import co.cask.cdap.proto.id.ProgramRunId;
+import co.cask.cdap.proto.id.TopicId;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import org.apache.derby.iapi.services.i18n.MessageService;
 import org.apache.tephra.RetryStrategies;
 import org.apache.tephra.TransactionFailureException;
 import org.apache.tephra.TransactionSystemClient;
 import org.apache.twill.api.RunId;
 import org.apache.twill.discovery.DiscoveryServiceClient;
 
+import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
 /**
@@ -91,9 +111,13 @@ import javax.annotation.Nullable;
 public abstract class AbstractContext extends AbstractServiceDiscoverer
   implements SecureStore, LineageDatasetContext, Transactional, RuntimeContext, PluginContext, MessagingContext {
 
+  private static final Gson GSON =
+    new GsonBuilder().registerTypeAdapter(PartitionKey.class, new PartitionKeyCodec()).create();
+
+  private final CConfiguration cConf;
   private final Program program;
   private final ProgramOptions programOptions;
-  private final RunId runId;
+  private final ProgramRunId programRunId;
   private final Iterable<? extends EntityId> owners;
   private final Map<String, String> runtimeArguments;
   private final Metrics userMetrics;
@@ -106,6 +130,7 @@ public abstract class AbstractContext extends AbstractServiceDiscoverer
   private final SecureStore secureStore;
   private final Transactional transactional;
   private final int defaultTxTimeout;
+  private final MessagingService messagingService;
   private final MultiThreadMessagingContext messagingContext;
   protected final DynamicDatasetCache datasetCache;
   protected final RetryStrategy retryStrategy;
@@ -116,20 +141,6 @@ public abstract class AbstractContext extends AbstractServiceDiscoverer
       return DataTracerFactoryProvider.get(applicationId).getDataTracer(applicationId, tracerName);
     }
   };
-
-  /**
-   * Constructs a context without plugin support.
-   */
-  protected AbstractContext(Program program, ProgramOptions programOptions, CConfiguration cConf,
-                            Set<String> datasets, DatasetFramework dsFramework, TransactionSystemClient txClient,
-                            DiscoveryServiceClient discoveryServiceClient, boolean multiThreaded,
-                            @Nullable MetricsCollectionService metricsService, Map<String, String> metricsTags,
-                            SecureStore secureStore, SecureStoreManager secureStoreManager,
-                            MessagingService messagingService) {
-    this(program, programOptions, cConf, datasets, dsFramework, txClient,
-         discoveryServiceClient, multiThreaded, metricsService, metricsTags,
-         secureStore, secureStoreManager, messagingService, null);
-  }
 
   /**
    * Constructs a context. To have plugin support, the {@code pluginInstantiator} must not be null.
@@ -145,10 +156,11 @@ public abstract class AbstractContext extends AbstractServiceDiscoverer
 
     this.program = program;
     this.programOptions = programOptions;
-    this.runId = ProgramRunners.getRunId(programOptions);
+    this.cConf = cConf;
+    this.programRunId = program.getId().run(ProgramRunners.getRunId(programOptions));
     this.discoveryServiceClient = discoveryServiceClient;
     this.owners = createOwners(program.getId());
-    this.programMetrics = createProgramMetrics(program, runId, metricsService, metricsTags);
+    this.programMetrics = createProgramMetrics(programRunId, metricsService, metricsTags);
     this.userMetrics = new ProgramUserMetrics(programMetrics);
     this.retryStrategy = SystemArguments.getRetryStrategy(programOptions.getUserArguments().asMap(),
                                                           program.getType(),
@@ -165,13 +177,14 @@ public abstract class AbstractContext extends AbstractServiceDiscoverer
     SystemDatasetInstantiator instantiator =
       new SystemDatasetInstantiator(dsFramework, program.getClassLoader(), owners);
 
+    this.messagingService = messagingService;
     this.messagingContext = new MultiThreadMessagingContext(messagingService);
 
     TransactionSystemClient retryingTxClient = new RetryingShortTransactionSystemClient(txClient, retryStrategy);
     this.datasetCache = multiThreaded
-      ? new MultiThreadDatasetCache(instantiator, retryingTxClient, new NamespaceId(program.getId().getNamespace()),
+      ? new MultiThreadDatasetCache(instantiator, retryingTxClient, program.getId().getNamespaceId(),
                                     runtimeArguments, programMetrics, staticDatasets, messagingContext)
-      : new SingleThreadDatasetCache(instantiator, retryingTxClient, new NamespaceId(program.getId().getNamespace()),
+      : new SingleThreadDatasetCache(instantiator, retryingTxClient, program.getId().getNamespaceId(),
                                      runtimeArguments, programMetrics, staticDatasets);
     this.pluginInstantiator = pluginInstantiator;
     this.pluginContext = new DefaultPluginContext(pluginInstantiator, program.getId(),
@@ -206,23 +219,29 @@ public abstract class AbstractContext extends AbstractServiceDiscoverer
   /**
    * Creates a {@link MetricsContext} for metrics emission of the program represented by this context.
    *
-   * @param program the {@link Program} context that the metrics should be emitted as
-   * @param runId the {@link RunId} of the current execution
+   * @param programRunId the {@link ProgramRunId} of the current execution
    * @param metricsService the underlying service for metrics publishing; or {@code null} to suppress metrics publishing
    * @param metricsTags a set of extra tags to be used for creating the {@link MetricsContext}
    * @return a {@link MetricsContext} for emitting metrics for the current program context.
    */
-  private MetricsContext createProgramMetrics(Program program, RunId runId,
+  private MetricsContext createProgramMetrics(ProgramRunId programRunId,
                                               @Nullable MetricsCollectionService metricsService,
                                               Map<String, String> metricsTags) {
-
     Map<String, String> tags = Maps.newHashMap(metricsTags);
-    tags.put(Constants.Metrics.Tag.NAMESPACE, program.getNamespaceId());
-    tags.put(Constants.Metrics.Tag.APP, program.getApplicationId());
-    tags.put(ProgramTypeMetricTag.getTagName(program.getType()), program.getName());
-    tags.put(Constants.Metrics.Tag.RUN_ID, runId.getId());
+    tags.put(Constants.Metrics.Tag.NAMESPACE, programRunId.getNamespace());
+    tags.put(Constants.Metrics.Tag.APP, programRunId.getApplication());
+    tags.put(ProgramTypeMetricTag.getTagName(programRunId.getType()), programRunId.getProgram());
+    tags.put(Constants.Metrics.Tag.RUN_ID, programRunId.getRun());
 
     return metricsService == null ? new NoopMetricsContext(tags) : metricsService.getContext(tags);
+  }
+
+  /**
+   * Returns the component Id or {@code null} if there is no component id for this runtime context.
+   */
+  @Nullable
+  protected NamespacedEntityId getComponentId() {
+    return null;
   }
 
   /**
@@ -267,7 +286,7 @@ public abstract class AbstractContext extends AbstractServiceDiscoverer
   @Override
   public String toString() {
     return String.format("namespaceId=%s, applicationId=%s, program=%s, runid=%s",
-                         getNamespaceId(), getApplicationId(), getProgramName(), runId);
+                         getNamespaceId(), getApplicationId(), getProgramName(), programRunId.getRun());
   }
 
   public MetricsContext getProgramMetrics() {
@@ -301,6 +320,12 @@ public abstract class AbstractContext extends AbstractServiceDiscoverer
   }
 
   @Override
+  public <T extends Dataset> T getDataset(final String name, final Map<String, String> arguments,
+                                          final AccessType accessType) throws DatasetInstantiationException {
+    return getDataset(programRunId.getNamespace(), name, arguments, accessType);
+  }
+
+  @Override
   public <T extends Dataset> T getDataset(final String namespace, final String name,
                                           final Map<String, String> arguments,
                                           final AccessType accessType) throws DatasetInstantiationException {
@@ -313,18 +338,12 @@ public abstract class AbstractContext extends AbstractServiceDiscoverer
     return Retries.callWithRetries(new Retries.Callable<T, DatasetInstantiationException>() {
       @Override
       public T call() throws DatasetInstantiationException {
-        return datasetCache.getDataset(namespace, name, arguments, accessType);
-      }
-    }, retryStrategy);
-  }
-
-  @Override
-  public <T extends Dataset> T getDataset(final String name, final Map<String, String> arguments,
-                                          final AccessType accessType) throws DatasetInstantiationException {
-    return Retries.callWithRetries(new Retries.Callable<T, DatasetInstantiationException>() {
-      @Override
-      public T call() throws DatasetInstantiationException {
-        return datasetCache.getDataset(name, arguments, accessType);
+        T dataset = datasetCache.getDataset(namespace, name, arguments, accessType);
+        if (dataset instanceof RuntimeProgramContextAware) {
+          DatasetId datasetId = new NamespaceId(namespace).dataset(name);
+          ((RuntimeProgramContextAware) dataset).setContext(createRuntimeProgramContext(datasetId));
+        }
+        return dataset;
       }
     }, retryStrategy);
   }
@@ -362,7 +381,7 @@ public abstract class AbstractContext extends AbstractServiceDiscoverer
 
   @Override
   public RunId getRunId() {
-    return runId;
+    return RunIds.fromString(programRunId.getRun());
   }
 
   @Override
@@ -590,16 +609,93 @@ public abstract class AbstractContext extends AbstractServiceDiscoverer
 
   @Override
   public MessagePublisher getMessagePublisher() {
-    return messagingContext.getMessagePublisher();
+    return new ProgramMessagePublisher(getMessagingContext().getMessagePublisher());
   }
 
   @Override
   public MessagePublisher getDirectMessagePublisher() {
-    return messagingContext.getDirectMessagePublisher();
+    return new ProgramMessagePublisher(getMessagingContext().getDirectMessagePublisher());
   }
 
   @Override
   public MessageFetcher getMessageFetcher() {
-    return messagingContext.getMessageFetcher();
+    return getMessagingContext().getMessageFetcher();
+  }
+
+  /**
+   * Returns the {@link MessageService} for interacting with TMS directly.
+   */
+  public MessagingService getMessagingService() {
+    return messagingService;
+  }
+
+  /**
+   * Returns the {@link MessagingContext} used for interacting with TMS.
+   */
+  protected MessagingContext getMessagingContext() {
+    return messagingContext;
+  }
+
+  /**
+   * Creates a new instance of {@link RuntimeProgramContext} to be
+   * provided to {@link RuntimeProgramContextAware} dataset.
+   */
+  private RuntimeProgramContext createRuntimeProgramContext(final DatasetId datasetId) {
+    return new RuntimeProgramContext() {
+
+      @Override
+      public void notifyNewPartitions(Collection<? extends PartitionKey> partitionKeys) throws IOException {
+        String topic = cConf.get(Constants.Dataset.DATA_EVENT_TOPIC);
+        if (Strings.isNullOrEmpty(topic)) {
+          // Don't publish if there is no data event topic
+          return;
+        }
+
+        TopicId dataEventTopic = NamespaceId.SYSTEM.topic(topic);
+        MessagePublisher publisher = getMessagingContext().getMessagePublisher();
+
+        Map<String, String> properties = new HashMap<>();
+        properties.put("datasetId", datasetId.toString());
+        properties.put("partitionKeys", GSON.toJson(Lists.newArrayList(partitionKeys)));
+        Notification notification = new Notification(System.currentTimeMillis(),
+                                                     Notification.Type.PARTITION, properties);
+
+        byte[] payload = Bytes.toBytes(GSON.toJson(notification));
+        int failure = 0;
+        long startTime = System.currentTimeMillis();
+        while (true) {
+          try {
+            publisher.publish(dataEventTopic.getNamespace(), dataEventTopic.getTopic(), payload);
+            return;
+          } catch (TopicNotFoundException e) {
+            // this shouldn't happen since the TMS creates the data event topic on startup.
+            throw new IOException("Unexpected exception due missing topic '" + dataEventTopic + "'", e);
+          } catch (IOException e) {
+            long sleepTime = retryStrategy.nextRetry(++failure, startTime);
+            if (sleepTime < 0) {
+              throw e;
+            }
+            try {
+              TimeUnit.MILLISECONDS.sleep(sleepTime);
+            } catch (InterruptedException ex) {
+              // If interrupted during sleep, just reset the interrupt flag and return
+              Thread.currentThread().interrupt();
+              return;
+            }
+          }
+        }
+      }
+
+      @Override
+      public ProgramRunId getProgramRunId() {
+        return programRunId;
+      }
+
+      @Nullable
+      @Override
+      public NamespacedEntityId getComponentId() {
+        return AbstractContext.this.getComponentId();
+      }
+    };
   }
 }

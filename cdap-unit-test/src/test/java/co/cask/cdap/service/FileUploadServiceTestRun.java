@@ -23,7 +23,13 @@ import co.cask.cdap.api.dataset.lib.KeyValueTable;
 import co.cask.cdap.api.dataset.lib.PartitionDetail;
 import co.cask.cdap.api.dataset.lib.PartitionKey;
 import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
+import co.cask.cdap.api.dataset.lib.partitioned.PartitionKeyCodec;
+import co.cask.cdap.api.messaging.Message;
+import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.io.Locations;
+import co.cask.cdap.proto.Notification;
+import co.cask.cdap.proto.id.DatasetId;
+import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.ServiceManager;
 import co.cask.cdap.test.base.TestFrameworkTestBase;
@@ -32,6 +38,9 @@ import com.google.common.base.Strings;
 import com.google.common.hash.Hashing;
 import com.google.common.io.BaseEncoding;
 import com.google.common.io.ByteStreams;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import org.apache.twill.filesystem.Location;
 import org.junit.Assert;
 import org.junit.Test;
@@ -40,6 +49,7 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -48,6 +58,9 @@ import java.util.concurrent.TimeUnit;
  *
  */
 public class FileUploadServiceTestRun extends TestFrameworkTestBase {
+
+  private static final Gson GSON =
+    new GsonBuilder().registerTypeAdapter(PartitionKey.class, new PartitionKeyCodec()).create();
 
   @Test
   public void testFileUploadService() throws Exception {
@@ -65,6 +78,8 @@ public class FileUploadServiceTestRun extends TestFrameworkTestBase {
                           upload(serviceURI.resolve("upload/" + FileUploadApp.PFS_NAME + "/1").toURL(), content,
                                  "123", 30));
 
+      long beforeUploadTime = System.currentTimeMillis();
+
       // Upload with right MD5, should get 200
       Assert.assertEquals(HttpURLConnection.HTTP_OK,
                           upload(serviceURI.resolve("upload/" + FileUploadApp.PFS_NAME + "/1").toURL(), content,
@@ -75,6 +90,34 @@ public class FileUploadServiceTestRun extends TestFrameworkTestBase {
       PartitionDetail partition = pfs.getPartition(PartitionKey.builder().addLongField("time", 1).build());
 
       Assert.assertNotNull(partition);
+
+      // Verify a notification should have been published for the new partition
+      try (CloseableIterator<Message> messages = getMessagingContext().getMessageFetcher()
+        .fetch(NamespaceId.SYSTEM.getNamespace(),
+               getConfiguration().get(Constants.Dataset.DATA_EVENT_TOPIC), 10, beforeUploadTime)) {
+
+        // Should have one message
+        Assert.assertTrue(messages.hasNext());
+
+        // Decode the notification from the payload
+        Notification notification = GSON.fromJson(new String(messages.next().getPayload(), StandardCharsets.UTF_8),
+                                                  Notification.class);
+        Assert.assertEquals(Notification.Type.PARTITION, notification.getTriggerType());
+
+        // Dataset name must match
+        Assert.assertEquals(NamespaceId.DEFAULT.dataset(FileUploadApp.PFS_NAME),
+                            DatasetId.fromString(notification.getProperties().get("datasetId")));
+
+        // Should have one partition "time = 1L" added
+        List<PartitionKey> partitionKeys = GSON.fromJson(notification.getProperties().get("partitionKeys"),
+                                                         new TypeToken<List<PartitionKey>>() { }.getType());
+        Assert.assertEquals(1, partitionKeys.size());
+        //noinspection unchecked
+        Assert.assertEquals(0, partitionKeys.get(0).getField("time").compareTo(1L));
+
+        // Should have no more messages
+        Assert.assertFalse(messages.hasNext());
+      }
 
       // There should be one file under the partition directory
       List<Location> locations = partition.getLocation().list();

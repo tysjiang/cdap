@@ -51,6 +51,8 @@ import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.api.dataset.table.Scanner;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.io.Locations;
+import co.cask.cdap.data.RuntimeProgramContext;
+import co.cask.cdap.data.RuntimeProgramContextAware;
 import co.cask.cdap.data2.dataset2.lib.file.FileSetDataset;
 import co.cask.cdap.explore.client.ExploreFacade;
 import co.cask.cdap.proto.id.DatasetId;
@@ -77,6 +79,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -88,7 +91,8 @@ import javax.annotation.Nullable;
 /**
  * Implementation of partitioned datasets using a Table to store the meta data.
  */
-public class PartitionedFileSetDataset extends AbstractDataset implements PartitionedFileSet, DatasetOutputCommitter {
+public class PartitionedFileSetDataset extends AbstractDataset
+  implements PartitionedFileSet, DatasetOutputCommitter, RuntimeProgramContextAware {
 
   private static final Logger LOG = LoggerFactory.getLogger(PartitionedFileSetDataset.class);
   private static final Gson GSON =
@@ -118,13 +122,11 @@ public class PartitionedFileSetDataset extends AbstractDataset implements Partit
   protected boolean ignoreInvalidRowsSilently = false;
 
   private final DatasetId datasetInstanceId;
+  private RuntimeProgramContext runtimeProgramContext;
 
-  // In this map we keep track of the partitions that were added in the same transaction.
-  // If the exact same partition is added again, we will not throw an error but only log a message that
-  // the partition already exists. The reason for this is to provide backward-compatibility for CDAP-1227:
-  // by adding the partition in the onSuccess() of this dataset, map/reduce programs do not need to do that in
-  // their onFinish() any longer. But existing map/reduce programs may still do that, and would now fail.
-  private final Map<String, PartitionKey> partitionsAddedInSameTx = new HashMap<>();
+  // Keep track of the partitions that were added in the same transaction.
+  // All partitions added in the same transaction will be published to TMS at commit time.
+  private final List<PartitionKey> partitionsAddedInSameTx = new LinkedList<>();
 
   // Keep track of all partitions' being added/dropped in this transaction, so we can rollback their paths,
   // if necessary.
@@ -152,11 +154,38 @@ public class PartitionedFileSetDataset extends AbstractDataset implements Partit
   }
 
   @Override
+  public void setContext(RuntimeProgramContext context) {
+    this.runtimeProgramContext = context;
+  }
+
+  /**
+   * Returns the current {@link RuntimeProgramContext} or {@code null} if it is not available.
+   */
+  @Nullable
+  protected RuntimeProgramContext getRuntimeProgramContext() {
+    return runtimeProgramContext;
+  }
+
+  @Override
   public void startTx(Transaction tx) {
     partitionsAddedInSameTx.clear();
     operationsInThisTx.clear();
     super.startTx(tx);
     this.tx = tx;
+  }
+
+  @Override
+  public boolean commitTx() throws Exception {
+    if (!super.commitTx()) {
+      return false;
+    }
+
+    // Publish a notification if there was new partition added.
+    RuntimeProgramContext runtimeProgramContext = getRuntimeProgramContext();
+    if (runtimeProgramContext != null && !partitionsAddedInSameTx.isEmpty()) {
+      runtimeProgramContext.notifyNewPartitions(partitionsAddedInSameTx);
+    }
+    return true;
   }
 
   @Override
@@ -299,10 +328,11 @@ public class PartitionedFileSetDataset extends AbstractDataset implements Partit
     put.add(WRITE_PTR_COL, tx.getWritePointer());
 
     partitionsTable.put(put);
-    partitionsAddedInSameTx.put(path, key);
 
     addPartitionToExplore(key, path);
     operation.setExplorePartitionCreated();
+
+    partitionsAddedInSameTx.add(key);
   }
 
   @ReadWrite
