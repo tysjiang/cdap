@@ -16,24 +16,26 @@
 
 package co.cask.cdap.internal.app.runtime.schedule;
 
-import co.cask.cdap.api.schedule.Builder;
+import co.cask.cdap.api.schedule.Configurer;
 import co.cask.cdap.internal.app.runtime.schedule.constraint.ConcurrencyConstraint;
 import co.cask.cdap.internal.app.runtime.schedule.constraint.Constraint;
 import co.cask.cdap.internal.app.runtime.schedule.constraint.DelayConstraint;
 import co.cask.cdap.internal.app.runtime.schedule.constraint.DurationSinceLastRunConstraint;
 import co.cask.cdap.internal.app.runtime.schedule.constraint.TimeRangeConstraint;
-import co.cask.cdap.internal.app.runtime.schedule.trigger.PFSTrigger;
+import co.cask.cdap.internal.app.runtime.schedule.trigger.PartitionTrigger;
 import co.cask.cdap.internal.app.runtime.schedule.trigger.TimeTrigger;
 import co.cask.cdap.proto.id.ProgramId;
+import com.google.common.base.Preconditions;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * The default implementation of {@link Builder}.
+ * The default implementation of {@link Configurer}.
  */
-public class DefaultBuilder implements Builder {
+public class DefaultConfigurer implements Configurer {
 
   private final String name;
   private final ProgramId programId;
@@ -41,7 +43,7 @@ public class DefaultBuilder implements Builder {
   private Map<String, String> properties;
   private List<Constraint> constraints;
 
-  private DefaultBuilder(String name, ProgramId programId) {
+  public DefaultConfigurer(String name, ProgramId programId) {
     this.name = name;
     this.description = "";
     this.programId = programId;
@@ -49,19 +51,19 @@ public class DefaultBuilder implements Builder {
   }
 
   @Override
-  public Builder setDescription(String description) {
+  public Configurer setDescription(String description) {
     this.description = description;
     return this;
   }
 
   @Override
-  public Builder setProperties(Map<String, String> properties) {
+  public Configurer setProperties(Map<String, String> properties) {
     this.properties = properties;
     return this;
   }
 
   @Override
-  public Builder limitConcurrentRuns(int max) {
+  public Configurer limitConcurrentRuns(int max) {
     if (max < 1) {
       throw new IllegalArgumentException("max concurrent runs must be at least 1.");
     }
@@ -70,34 +72,38 @@ public class DefaultBuilder implements Builder {
   }
 
   @Override
-  public Builder delayRun(long delayMillis) {
+  public Configurer delayRun(long delayMillis) {
     // TODO: disallow from being called multiple times?
     constraints.add(new DelayConstraint(delayMillis));
     return this;
   }
 
   @Override
-  public Builder setTimeRange(int startHour, int endHour) {
+  public Configurer setTimeRange(int startHour, int endHour) {
     constraints.add(new TimeRangeConstraint(startHour, endHour));
     return this;
   }
 
   @Override
-  public Builder setDurationSinceLastRun(long delayMillis) {
+  public Configurer setDurationSinceLastRun(long delayMillis) {
     constraints.add(new DurationSinceLastRunConstraint(delayMillis));
     return this;
   }
 
   @Override
-  public void createTimeSchedule(String cronExpression) {
-    // TODO: associate the schedule with the program
-    new ProgramSchedule(name, description, programId, properties, new TimeTrigger(cronExpression), constraints);
+  public void triggerByTime(String cronExpression) {
+    setSchedule(new ProgramSchedule(name, description, programId, properties,
+                                    new TimeTrigger(cronExpression), constraints));
   }
 
   @Override
-  public void createPFSTrigger(String datasetName, int numPartitions) {
-    // TODO: associate the schedule with the program
-    new ProgramSchedule(name, description, programId, properties,
-                        new PFSTrigger(datasetName, numPartitions), constraints);
+  public void triggerOnPartitions(String datasetName, int numPartitions) {
+    setSchedule(new ProgramSchedule(name, description, programId, properties,
+                                    new PartitionTrigger(programId.getNamespaceId().dataset(datasetName),
+                                                         numPartitions),
+                                    constraints));
+  }
+
+  private void setSchedule(ProgramSchedule schedule) {
   }
 }

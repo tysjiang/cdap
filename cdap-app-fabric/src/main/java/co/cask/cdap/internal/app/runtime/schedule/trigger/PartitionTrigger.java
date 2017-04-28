@@ -17,20 +17,22 @@
 package co.cask.cdap.internal.app.runtime.schedule.trigger;
 
 
+import co.cask.cdap.proto.id.DatasetId;
+
 /**
  * A Trigger that schedules a ProgramSchedule, when a certain number of partitions are added to a PartitionedFileSet.
  */
-public class PFSTrigger extends Trigger {
-  private final String pfsName;
+public class PartitionTrigger extends Trigger {
+  private final DatasetId datasetId;
   private final int numPartitions;
 
-  public PFSTrigger(String pfsName, int numPartitions) {
-    this.pfsName = pfsName;
+  public PartitionTrigger(DatasetId datasetId, int numPartitions) {
+    this.datasetId = datasetId;
     this.numPartitions = numPartitions;
   }
 
-  public String getPfsName() {
-    return pfsName;
+  public DatasetId getDatasetId() {
+    return datasetId;
   }
 
   public int getNumPartitions() {

@@ -19,23 +19,23 @@ package co.cask.cdap.api.schedule;
 import java.util.Map;
 
 /**
- * Builder for scheduling.
+ * Configurer for scheduling.
  */
-public interface Builder {
+public interface Configurer {
 
-  Builder setDescription(String description);
+  Configurer setDescription(String description);
 
-  Builder setProperties(Map<String, String> properties);
+  Configurer setProperties(Map<String, String> properties);
 
-  Builder limitConcurrentRuns(int max);
+  Configurer limitConcurrentRuns(int max);
 
-  Builder delayRun(long delayMillis);
+  Configurer delayRun(long delayMillis);
 
-  Builder setTimeRange(int startHour, int endHour);
+  Configurer setTimeRange(int startHour, int endHour);
 
-  Builder setDurationSinceLastRun(long delayMillis);
+  Configurer setDurationSinceLastRun(long delayMillis);
 
-  void createTimeSchedule(String cronExpression);
+  void triggerByTime(String cronExpression);
 
-  void createPFSTrigger(String datasetName, int numPartitions);
+  void triggerOnPartitions(String datasetName, int numPartitions);
 }
