@@ -140,8 +140,8 @@ To list all versions or a specific range of versions of an artifact, submit an H
        defaults to returning all artifacts which match the requirements.
    * - ``order``
      - Optional order filter. Accepted values are one of ``DESC``, ``ASC``, or
-       ``UNORDERED``. ``DESC`` will sort the artifacts first by scope, then by version from
-       highest to lowest; for ``ASC``, sorted first by scope and then by version from lowest
+       ``UNORDERED``. ``DESC`` will sort the artifacts by version from
+       highest to lowest; for ``ASC``, sorted by version from lowest
        to highest. If not specified, defaults to ``UNORDERED``.
 
 This will return a JSON array that lists each version of the specified artifact with
@@ -537,7 +537,7 @@ an HTTP GET request::
        defaults to returning all plugins which match the requirements.
    * - ``order``
      - Optional order filter. Accepted values are one of ``DESC``, ``ASC``, or
-       ``UNORDERED``. ``DESC`` will sort the plugin artifacts first by scope, then by name
+       ``UNORDERED``. ``DESC`` will sort the plugin artifacts first by scope(``USER`` scope is greater than ``SYSTEM``), then by name
        descending alphabetically, and then by version from highest to lowest; for ``ASC``,
        sorted first by scope, then by name ascending alphabetically, and then by version
        from lowest to highest. If not specified, defaults to ``UNORDERED``.
