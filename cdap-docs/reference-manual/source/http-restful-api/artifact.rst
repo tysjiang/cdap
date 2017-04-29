@@ -537,7 +537,7 @@ an HTTP GET request::
        defaults to returning all plugins which match the requirements.
    * - ``order``
      - Optional order filter. Accepted values are one of ``DESC``, ``ASC``, or
-       ``UNORDERED``. ``DESC`` will sort the plugin artifacts first by scope(``USER`` scope is greater than ``SYSTEM``), then by name
+       ``UNORDERED``. ``DESC`` will sort the plugin artifacts first by scope (``USER`` scope is greater than ``SYSTEM``), then by name
        descending alphabetically, and then by version from highest to lowest; for ``ASC``,
        sorted first by scope, then by name ascending alphabetically, and then by version
        from lowest to highest. If not specified, defaults to ``UNORDERED``.
