@@ -17,19 +17,33 @@
 package co.cask.cdap.test.base;
 
 import co.cask.cdap.api.app.Application;
+import co.cask.cdap.api.dataset.lib.CloseableIterator;
+import co.cask.cdap.api.dataset.lib.PartitionKey;
+import co.cask.cdap.api.dataset.lib.partitioned.PartitionKeyCodec;
+import co.cask.cdap.api.messaging.Message;
+import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.test.AppJarHelper;
+import co.cask.cdap.proto.Notification;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
 import co.cask.cdap.proto.id.ArtifactId;
+import co.cask.cdap.proto.id.DatasetId;
 import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.TestBase;
 import com.google.common.base.Throwables;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import org.apache.twill.filesystem.LocalLocationFactory;
 import org.junit.After;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
@@ -37,6 +51,9 @@ import javax.annotation.Nullable;
  * TestBase for all test framework tests
  */
 public class TestFrameworkTestBase extends TestBase {
+
+  private static final Gson GSON =
+    new GsonBuilder().registerTypeAdapter(PartitionKey.class, new PartitionKeyCodec()).create();
 
   @Override
   @After
@@ -120,5 +137,46 @@ public class TestFrameworkTestBase extends TestBase {
       // If really fail to do reset, propagate the exception
       throw Throwables.propagate(e);
     }
+  }
+
+  /**
+   * Returns a list of {@link Notification} object fetched from the data event topic in TMS that was published
+   * starting from the given time.
+   */
+  protected List<Notification> getDataNotifications(long startTime) throws Exception {
+    // Get data notifications from TMS
+    List<Notification> notifications = new ArrayList<>();
+    try (CloseableIterator<Message> messages = getMessagingContext().getMessageFetcher()
+      .fetch(NamespaceId.SYSTEM.getNamespace(),
+             getConfiguration().get(Constants.Dataset.DATA_EVENT_TOPIC), 10, startTime)) {
+
+      while (messages.hasNext()) {
+        notifications.add(GSON.fromJson(new String(messages.next().getPayload(), StandardCharsets.UTF_8),
+                                        Notification.class));
+      }
+    }
+
+    return notifications;
+  }
+
+  /**
+   * Returns the {@link DatasetId} decoded from the given {@link Notification} or {@code null} if it doesn't has one.
+   */
+  @Nullable
+  protected DatasetId getDatasetId(Notification notification) {
+    String id = notification.getProperties().get("datasetId");
+    return id == null ? null : DatasetId.fromString(id);
+  }
+
+  /**
+   * Returns a list of {@link PartitionKey} decoded from the given {@link Notification} object.
+   */
+  protected List<PartitionKey> getPartitionKeys(Notification notification) {
+    String json = notification.getProperties().get("partitionKeys");
+    if (json == null) {
+      return Collections.emptyList();
+    }
+    return GSON.fromJson(notification.getProperties().get("partitionKeys"),
+                         new TypeToken<List<PartitionKey>>() { }.getType());
   }
 }

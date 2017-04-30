@@ -32,6 +32,7 @@ import co.cask.cdap.spark.service.SparkServiceIntegrationTestRun;
 import co.cask.cdap.spark.stream.SparkStreamIntegrationTestRun;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.XSlowTests;
+import co.cask.cdap.test.app.DynamicPartitioningTestRun;
 import co.cask.cdap.test.app.ServiceLifeCycleTestRun;
 import co.cask.cdap.test.app.TestFrameworkTestRun;
 import co.cask.cdap.test.messaging.MessagingAppTestRun;
